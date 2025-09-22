@@ -1,37 +1,48 @@
-import { NextAuthOptions, SessionStrategy } from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
-import { prisma } from "./prisma";
-import bcrypt from "bcryptjs";
+import type { NextAuthConfig } from "next-auth"
+import Credentials from "next-auth/providers/credentials"
+import { prisma } from "./prisma"
+import bcrypt from "bcryptjs"
 
-export const authOptions: NextAuthOptions = {
+export const authConfig: NextAuthConfig = {
   providers: [
-    CredentialsProvider({
+    Credentials({
       name: "Admin",
       credentials: {
         email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        if (!credentials?.email || !credentials?.password) {
+          return null
+        }
+
+        const { email, password } = credentials as {
+          email: string
+          password: string
+        }
 
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-        });
+          where: { email },
+        })
 
-        if (!user) return null;
+        if (!user) return null
 
-        const isValid = await bcrypt.compare(credentials.password, user.password);
-        if (!isValid) return null;
+        const isValid = await bcrypt.compare(password, user.password)
+        if (!isValid) return null
 
-        return { id: user.id.toString(), email: user.email, name: user.name };
+        return {
+          id: user.id.toString(),
+          email: user.email,
+          name: user.name,
+        }
       },
     }),
   ],
   session: {
-    strategy: "jwt" as SessionStrategy,
+    strategy: "jwt",
   },
   pages: {
     signIn: "/login",
   },
   secret: process.env.NEXTAUTH_SECRET,
-};
+}
