@@ -1,10 +1,11 @@
+// api/auth/[...nextauth]/route.ts
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-// NextAuth handler
-const authHandler = NextAuth({
+// singleton handler untuk App Router
+const handler = NextAuth({
   providers: [
     CredentialsProvider({
       name: "Admin",
@@ -13,37 +14,39 @@ const authHandler = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        // pastikan credentials ada
         if (!credentials?.email || !credentials?.password) return null;
-
-        // destructure dengan tipe agar TypeScript yakin ini string
-        const { email, password } = credentials as { email: string; password: string };
 
         // ambil user dari DB
         const user = await prisma.user.findUnique({
-          where: { email },
+          where: { email: credentials.email as string },
         });
         if (!user) return null;
 
         // cek password
-        const isValid = await bcrypt.compare(password, user.password);
+        const isValid = await bcrypt.compare(
+          String(credentials.password),
+          String(user.password)
+        );
         if (!isValid) return null;
 
-        // return user object (NextAuth user)
-        return {
-          id: user.id.toString(),
-          email: user.email,
-          name: user.name ?? undefined,
-        };
+        return { id: user.id.toString(), email: user.email, name: user.name ?? undefined };
       },
     }),
   ],
   session: { strategy: "jwt" },
-  pages: {
-    signIn: "/login", // redirect ke login kalau belum signin
-  },
+  pages: { signIn: "/login" },
   secret: process.env.NEXTAUTH_SECRET,
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) token.id = user.id;
+      return token;
+    },
+    async session({ session, token }) {
+      if (token?.id) session.user.id = token.id as string;
+      return session;
+    },
+  },
 });
 
-// export handler sebagai GET dan POST
-export { authHandler as GET, authHandler as POST };
+// App Router export harus GET & POST
+export { handler as GET, handler as POST };
