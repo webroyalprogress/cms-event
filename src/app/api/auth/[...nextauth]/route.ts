@@ -3,7 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-export const GET = async (req: Request) => {
+export async function GET(request: Request) {
   return await NextAuth({
     providers: [
       CredentialsProvider({
@@ -18,7 +18,6 @@ export const GET = async (req: Request) => {
           const user = await prisma.user.findUnique({
             where: { email: credentials.email },
           });
-
           if (!user) return null;
 
           const isValid = await bcrypt.compare(credentials.password, user.password);
@@ -30,7 +29,7 @@ export const GET = async (req: Request) => {
     ],
     session: { strategy: "jwt" },
     secret: process.env.NEXTAUTH_SECRET,
-  })(req);
-};
+  })(request);
+}
 
 export const POST = GET;
