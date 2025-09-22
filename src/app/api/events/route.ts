@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { authOptions } from "@/lib/auth"
-import { getServerSession } from "next-auth/next"
+import { authConfig } from "@/lib/auth"
+import getServerSession from "next-auth"
 
 type EventBody = { id?: number; name: string }
 
 async function checkAuth() {
-  const session = await getServerSession(authOptions)
+  const session = await getServerSession(authConfig)
   if (!session) {
     return null
   }
