@@ -1,37 +1,38 @@
-import NextAuth from "next-auth"
+import type { NextAuthConfig } from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import { prisma } from "./prisma"
 import bcrypt from "bcryptjs"
 
+type AuthUser = {
+  id: string
+  email: string
+  name?: string
+}
+
 export const authConfig = {
   providers: [
     Credentials({
+      name: "Admin",
       credentials: {
         email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
-        // pastiin ada input
-        if (!credentials?.email || !credentials?.password) {
-          return null
-        }
+      async authorize(credentials): Promise<AuthUser | null> {
+        if (!credentials?.email || !credentials?.password) return null
 
-        const email = String(credentials.email)
-        const password = String(credentials.password)
+        const email = credentials.email as string
+        const password = credentials.password as string
 
-        // cari user di database
         const user = await prisma.user.findUnique({
-          where: { email }, // sudah pasti string
+          where: { email }, // ✅ sekarang pasti string
         })
-
         if (!user) return null
 
-        // cek password
         const isValid = await bcrypt.compare(password, user.password)
         if (!isValid) return null
 
         return {
-          id: String(user.id),
+          id: user.id.toString(),
           email: user.email,
           name: user.name ?? undefined,
         }
@@ -39,27 +40,31 @@ export const authConfig = {
     }),
   ],
 
-  session: { strategy: "jwt" },
-
-  pages: {
-    signIn: "/login",
+  session: {
+    strategy: "jwt",
   },
 
-  secret: process.env.NEXTAUTH_SECRET,
+  pages: {
+    signIn: "/auth/login",
+  },
 
   callbacks: {
     async jwt({ token, user }) {
-      if (user) token.id = (user as any).id
+      if (user) {
+        const u = user as AuthUser
+        token.id = u.id
+        token.email = u.email
+      }
       return token
     },
     async session({ session, token }) {
       if (token?.id) {
-        session.user = {
-          ...session.user,
-          id: token.id as string,
-        }
+        session.user.id = token.id as string
+      }
+      if (token?.email) {
+        session.user.email = token.email as string
       }
       return session
     },
   },
-} satisfies Parameters<typeof NextAuth>[0]
+} satisfies NextAuthConfig
