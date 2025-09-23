@@ -1,34 +1,32 @@
-import type { NextAuthConfig } from "next-auth"
-import Credentials from "next-auth/providers/credentials"
+import type { NextAuthOptions } from "next-auth"
+import CredentialsProvider from "next-auth/providers/credentials"
 import { prisma } from "./prisma"
-import bcrypt from "bcryptjs"
+import * as bcrypt from "bcryptjs"
 
+// tipe user kustom
 type AuthUser = {
   id: string
   email: string
   name?: string
 }
 
-export const authConfig = {
+export const authOptions: NextAuthOptions = {
   providers: [
-    Credentials({
+    CredentialsProvider({
       name: "Admin",
       credentials: {
         email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials): Promise<AuthUser | null> {
+      async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null
 
-        const email = credentials.email as string
-        const password = credentials.password as string
-
         const user = await prisma.user.findUnique({
-          where: { email }, // ✅ sekarang pasti string
+          where: { email: credentials.email },
         })
         if (!user) return null
 
-        const isValid = await bcrypt.compare(password, user.password)
+        const isValid = await bcrypt.compare(credentials.password, user.password)
         if (!isValid) return null
 
         return {
@@ -58,13 +56,9 @@ export const authConfig = {
       return token
     },
     async session({ session, token }) {
-      if (token?.id) {
-        session.user.id = token.id as string
-      }
-      if (token?.email) {
-        session.user.email = token.email as string
-      }
+      if (token?.id) session.user.id = token.id as string
+      if (token?.email) session.user.email = token.email as string
       return session
     },
   },
-} satisfies NextAuthConfig
+}

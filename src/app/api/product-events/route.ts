@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import getServerSession from "next-auth";
-import { authConfig } from "@/lib/auth";
+import { authOptions } from "@/lib/auth";
 
 // Helper auth check
 async function checkAuth() {
-  const session = getServerSession(authConfig);
+  const session = getServerSession(authOptions);
   if (!session) {
     return null;
   }
