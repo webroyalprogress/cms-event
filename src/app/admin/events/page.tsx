@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 
 interface Event {
   id: number;
-  name: string;
+  name: string; // Nama event
 }
 
 export default function EventsPage() {
