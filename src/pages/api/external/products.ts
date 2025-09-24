@@ -17,7 +17,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     switch (req.method) {
       case "GET": {
-        // Include product slug & relasi event lengkap
         const products = await prisma.product.findMany({
           include: {
             events: {
@@ -31,8 +30,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       case "POST": {
-        const { name, price } = req.body;
-        if (!name || !price) return res.status(400).json({ error: "Name and price are required" });
+        const { name, price, description } = req.body;
+        if (!name || price == null || !description)
+          return res.status(400).json({ error: "Name, price, and description are required" });
 
         const slug = slugify(name, { lower: true, strict: true });
 
@@ -40,16 +40,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           data: {
             name,
             price: Number(price),
+            description,
             slug,
           },
         });
+
         return res.status(201).json(product);
       }
 
       case "PUT": {
-        const { id, name, price } = req.body;
-        if (!id || !name || !price)
-          return res.status(400).json({ error: "ID, name, and price are required" });
+        const { id, name, price, description } = req.body;
+        if (!id || !name || price == null || !description)
+          return res.status(400).json({ error: "ID, name, price, and description are required" });
 
         const slug = slugify(name, { lower: true, strict: true });
 
@@ -58,9 +60,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           data: {
             name,
             price: Number(price),
+            description,
             slug,
           },
         });
+
         return res.status(200).json(product);
       }
 
@@ -68,7 +72,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const { id } = req.query;
         if (!id) return res.status(400).json({ error: "ID required" });
 
-        const productId = Array.isArray(id) ? parseInt(id[0], 10) : parseInt(id, 10);
+        const productId = Array.isArray(id) ? Number(id[0]) : Number(id);
         if (isNaN(productId)) return res.status(400).json({ error: "Invalid ID" });
 
         await prisma.product.delete({ where: { id: productId } });

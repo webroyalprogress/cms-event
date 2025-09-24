@@ -13,9 +13,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       case "POST": {
-        const { name, price } = req.body;
-        if (!name || price == null) {
-          return res.status(400).json({ error: "Name and price are required" });
+        const { name, price, description } = req.body;
+
+        if (!name || price == null || !description) {
+          return res.status(400).json({ error: "Name, price, and description are required" });
         }
 
         const slug = slugify(name, { lower: true, strict: true });
@@ -23,17 +24,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const product = await prisma.product.create({
           data: {
             name,
-            price,
+            price: Number(price),
+            description,
             slug,
           },
         });
+
         return res.status(201).json(product);
       }
 
       case "PUT": {
-        const { id, name, price } = req.body;
-        if (!id || !name || price == null) {
-          return res.status(400).json({ error: "ID, name, and price are required" });
+        const { id, name, price, description } = req.body;
+
+        if (!id || !name || price == null || !description) {
+          return res.status(400).json({ error: "ID, name, price, and description are required" });
         }
 
         const slug = slugify(name, { lower: true, strict: true });
@@ -42,22 +46,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           where: { id: Number(id) },
           data: {
             name,
-            price,
+            price: Number(price),
+            description,
             slug,
           },
         });
+
         return res.status(200).json(product);
       }
 
       case "DELETE": {
         const { id } = req.query;
-        if (!id) {
-          return res.status(400).json({ error: "ID required" });
-        }
+        if (!id) return res.status(400).json({ error: "ID required" });
+
+        const productId = Array.isArray(id) ? Number(id[0]) : Number(id);
 
         await prisma.product.delete({
-          where: { id: Number(id) },
+          where: { id: productId },
         });
+
         return res.status(200).json({ message: "Product deleted" });
       }
 

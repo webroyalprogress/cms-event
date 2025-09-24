@@ -14,12 +14,13 @@ datasource db {
 }
 
 model Product {
-  id        Int            @id @default(autoincrement())
-  name      String
-  price     Float
-  createdAt DateTime       @default(now())
-  events    ProductEvent[]
-  slug      String         @unique
+  id          Int            @id @default(autoincrement())
+  name        String
+  price       Float
+  description String         @db.Text
+  slug        String         @unique
+  createdAt   DateTime       @default(now())
+  events      ProductEvent[]
 }
 
 model Event {
