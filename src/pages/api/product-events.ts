@@ -1,16 +1,22 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import bcrypt from "bcryptjs";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const session = await getServerSession(req, res, authOptions);
-  if (!session) {
-    return res.redirect("/admin/login"); // kalau mau redirect
-    // atau kalau mau JSON:
-    // return res.status(401).json({ error: "Unauthorized" });
+  // 🔒 Auth pakai Bearer Token
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.split(" ")[1]; // ambil setelah "Bearer "
+
+  if (!token) {
+    return res.status(401).json({ error: "Unauthorized" });
   }
 
+  const isValid = await bcrypt.compare(token, process.env.API_BEARER_TOKEN_HASH!);
+  if (!isValid) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  // 🚀 Lanjut CRUD
   try {
     switch (req.method) {
       case "GET": {
@@ -21,44 +27,46 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       case "POST": {
-        const body = req.body;
-        if (!body.productId || !body.eventId) {
+        const { productId, eventId } = req.body;
+        if (!productId || !eventId) {
           return res.status(400).json({ error: "Missing productId or eventId" });
         }
 
         const productEvent = await prisma.productEvent.create({
           data: {
-            productId: body.productId,
-            eventId: body.eventId,
+            productId: Number(productId),
+            eventId: Number(eventId),
           },
         });
         return res.status(201).json(productEvent);
       }
 
       case "PUT": {
-        const body = req.body;
-        if (!body.id || !body.productId || !body.eventId) {
+        const { id, productId, eventId } = req.body;
+        if (!id || !productId || !eventId) {
           return res.status(400).json({ error: "Missing id, productId or eventId" });
         }
 
         const productEvent = await prisma.productEvent.update({
-          where: { id: body.id },
+          where: { id: Number(id) },
           data: {
-            productId: body.productId,
-            eventId: body.eventId,
+            productId: Number(productId),
+            eventId: Number(eventId),
           },
         });
         return res.status(200).json(productEvent);
       }
 
       case "DELETE": {
-        const body = req.body;
-        if (!body.id) {
+        const { id } = req.body;
+        if (!id) {
           return res.status(400).json({ error: "Missing id" });
         }
 
-        await prisma.productEvent.delete({ where: { id: body.id } });
-        return res.status(200).json({ message: "Relation deleted" });
+        await prisma.productEvent.delete({
+          where: { id: Number(id) },
+        });
+        return res.status(200).json({ message: "Relation deleted successfully" });
       }
 
       default:
