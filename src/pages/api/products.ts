@@ -1,22 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/lib/prisma";
-import bcrypt from "bcryptjs";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // 🔒 Auth pakai Bearer Token
-  const authHeader = req.headers.authorization;
-  const token = authHeader?.split(" ")[1]; // ambil setelah "Bearer "
-
-  if (!token) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-
-  const isValid = await bcrypt.compare(token, process.env.API_BEARER_TOKEN_HASH!);
-  if (!isValid) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-
-  // 🚀 Lanjut CRUD
   try {
     switch (req.method) {
       case "GET": {
@@ -27,31 +12,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       case "POST": {
-        const { name, price } = req.body;
-        if (!name || !price) {
+        const body = req.body;
+        if (!body.name || !body.price) {
           return res.status(400).json({ error: "Name and price are required" });
         }
 
         const product = await prisma.product.create({
           data: {
-            name,
-            price: Number(price),
+            name: body.name,
+            price: body.price,
           },
         });
         return res.status(201).json(product);
       }
 
       case "PUT": {
-        const { id, name, price } = req.body;
-        if (!id || !name || !price) {
+        const body = req.body;
+        if (!body.id || !body.name || !body.price) {
           return res.status(400).json({ error: "ID, name, and price are required" });
         }
 
         const product = await prisma.product.update({
-          where: { id: Number(id) },
+          where: { id: body.id },
           data: {
-            name,
-            price: Number(price),
+            name: body.name,
+            price: body.price,
           },
         });
         return res.status(200).json(product);
@@ -63,15 +48,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           return res.status(400).json({ error: "ID required" });
         }
 
-        const productId = Array.isArray(id) ? parseInt(id[0], 10) : parseInt(id, 10);
-        if (isNaN(productId)) {
-          return res.status(400).json({ error: "Invalid ID" });
-        }
-
         await prisma.product.delete({
-          where: { id: productId },
+          where: { id: Number(id) },
         });
-        return res.status(200).json({ message: "Product deleted successfully" });
+        return res.status(200).json({ message: "Product deleted" });
       }
 
       default:

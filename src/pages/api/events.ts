@@ -1,22 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/lib/prisma";
-import bcrypt from "bcryptjs";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // 🔒 Auth pakai Bearer Token
-  const authHeader = req.headers.authorization;
-  const token = authHeader?.split(" ")[1]; // ambil setelah "Bearer "
-
-  if (!token) {
+  const session = await getServerSession(req, res, authOptions);
+  if (!session) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const isValid = await bcrypt.compare(token, process.env.API_BEARER_TOKEN_HASH!);
-  if (!isValid) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-
-  // 🚀 Lanjut CRUD
   try {
     switch (req.method) {
       case "GET": {
@@ -36,10 +28,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const { id, name } = req.body;
         if (!id || !name) return res.status(400).json({ error: "ID and name required" });
 
-        const event = await prisma.event.update({
-          where: { id: Number(id) }, // pastikan ID number
-          data: { name },
-        });
+        const event = await prisma.event.update({ where: { id }, data: { name } });
         return res.status(200).json(event);
       }
 
