@@ -7,9 +7,9 @@ interface Product {
   id: number;
   name: string;
   price: number;
-  description: string;
-  slug: string;
+  description: string; // full
   excerpt: string | null; // potongan
+  slug: string;
 }
 
 export default function ProductsPage() {
@@ -19,9 +19,8 @@ export default function ProductsPage() {
   const [description, setDescription] = useState("");
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
 
-  const API_URL = "/api/products";
+  const API_URL = "/api/external/products";
 
-  // Fetch semua product
   const fetchProducts = async () => {
     const res = await fetch(API_URL);
     const data = await res.json();
@@ -32,7 +31,6 @@ export default function ProductsPage() {
     fetchProducts();
   }, []);
 
-  // Tambah / Update product
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const slug = slugify(name, { lower: true, strict: true });
@@ -41,13 +39,7 @@ export default function ProductsPage() {
       await fetch(API_URL, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: editingProductId,
-          name,
-          price: Number(price),
-          description,
-          slug,
-        }),
+        body: JSON.stringify({ id: editingProductId, name, price: Number(price), description, slug }),
       });
       setEditingProductId(null);
     } else {
@@ -68,7 +60,7 @@ export default function ProductsPage() {
     setEditingProductId(product.id);
     setName(product.name);
     setPrice(product.price.toString());
-    setDescription(product.description);
+    setDescription(product.description); // full description
   };
 
   const handleDelete = async (id: number) => {
@@ -146,7 +138,7 @@ export default function ProductsPage() {
                 <tr key={p.id}>
                   <td className="border px-4 py-2">{p.name}</td>
                   <td className="border px-4 py-2">{p.price}</td>
-                  <td className="border px-4 py-2">{p.excerpt}</td>
+                  <td className="border px-4 py-2">{p.excerpt || p.description}</td>
                   <td className="border px-4 py-2 space-x-2">
                     <button
                       className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"

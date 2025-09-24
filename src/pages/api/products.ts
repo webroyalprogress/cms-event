@@ -7,14 +7,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     switch (req.method) {
       case "GET": {
         const products = await prisma.product.findMany({
-          include: { events: true },
+          orderBy: { createdAt: "desc" },
         });
         return res.status(200).json(products);
       }
 
       case "POST": {
         const { name, price, description } = req.body;
-
         if (!name || price == null || !description) {
           return res.status(400).json({ error: "Name, price, and description are required" });
         }
@@ -27,7 +26,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             price: Number(price),
             description,
             slug,
-             excerpt: description ? description.slice(0, 100) : null,
+            excerpt: description.slice(0, 100),
           },
         });
 
@@ -36,7 +35,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       case "PUT": {
         const { id, name, price, description } = req.body;
-
         if (!id || !name || price == null || !description) {
           return res.status(400).json({ error: "ID, name, price, and description are required" });
         }
@@ -50,6 +48,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             price: Number(price),
             description,
             slug,
+            excerpt: description.slice(0, 100),
           },
         });
 
