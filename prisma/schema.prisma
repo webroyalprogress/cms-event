@@ -17,15 +17,17 @@ model Product {
   id        Int            @id @default(autoincrement())
   name      String
   price     Float
-  createdAt DateTime @default(now())
+  createdAt DateTime       @default(now())
   events    ProductEvent[]
+  slug      String         @unique
 }
 
 model Event {
- id        Int            @id @default(autoincrement())
+  id        Int            @id @default(autoincrement())
   name      String
   products  ProductEvent[]
-  createdAt DateTime @default(now())
+  slug      String         @unique
+  createdAt DateTime       @default(now())
 }
 
 model ProductEvent {

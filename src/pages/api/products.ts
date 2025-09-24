@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/lib/prisma";
+import slugify from "slugify";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -12,31 +13,37 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       case "POST": {
-        const body = req.body;
-        if (!body.name || !body.price) {
+        const { name, price } = req.body;
+        if (!name || price == null) {
           return res.status(400).json({ error: "Name and price are required" });
         }
 
+        const slug = slugify(name, { lower: true, strict: true });
+
         const product = await prisma.product.create({
           data: {
-            name: body.name,
-            price: body.price,
+            name,
+            price,
+            slug,
           },
         });
         return res.status(201).json(product);
       }
 
       case "PUT": {
-        const body = req.body;
-        if (!body.id || !body.name || !body.price) {
+        const { id, name, price } = req.body;
+        if (!id || !name || price == null) {
           return res.status(400).json({ error: "ID, name, and price are required" });
         }
 
+        const slug = slugify(name, { lower: true, strict: true });
+
         const product = await prisma.product.update({
-          where: { id: body.id },
+          where: { id: Number(id) },
           data: {
-            name: body.name,
-            price: body.price,
+            name,
+            price,
+            slug,
           },
         });
         return res.status(200).json(product);

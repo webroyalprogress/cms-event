@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import slugify from "slugify";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getServerSession(req, res, authOptions);
@@ -20,7 +21,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const { name } = req.body;
         if (!name) return res.status(400).json({ error: "Name is required" });
 
-        const event = await prisma.event.create({ data: { name } });
+        const slug = slugify(name, { lower: true, strict: true });
+
+        const event = await prisma.event.create({
+          data: { name, slug },
+        });
         return res.status(201).json(event);
       }
 
@@ -28,7 +33,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const { id, name } = req.body;
         if (!id || !name) return res.status(400).json({ error: "ID and name required" });
 
-        const event = await prisma.event.update({ where: { id }, data: { name } });
+        const slug = slugify(name, { lower: true, strict: true });
+
+        const event = await prisma.event.update({
+          where: { id: Number(id) },
+          data: { name, slug },
+        });
         return res.status(200).json(event);
       }
 

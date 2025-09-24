@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import slugify from "slugify";
 
 interface Event {
   id: number;
   name: string;
+  slug: string;
 }
 
 interface ApiError {
@@ -27,7 +29,6 @@ export default function EventsPage() {
     try {
       const res = await fetch(API_URL, { credentials: "include" });
       const data: Event[] | ApiError = await res.json();
-
       if ("error" in data) {
         setError(data.error);
         setEvents([]);
@@ -51,10 +52,18 @@ export default function EventsPage() {
     e.preventDefault();
     setError(null);
 
+    if (!name) {
+      setError("Name is required");
+      return;
+    }
+
+    // Generate slug otomatis dari name
+    const slug = slugify(name, { lower: true, strict: true });
+
     try {
-      const payload = { name };
       let url = API_URL;
       let method: "POST" | "PUT" = "POST";
+      const payload = { name, slug };
 
       if (editingEventId) {
         url = `${API_URL}?id=${editingEventId}`;
@@ -114,7 +123,6 @@ export default function EventsPage() {
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">Events</h1>
 
-      {/* Error message */}
       {error && <p className="mb-4 text-red-500">{error}</p>}
 
       {/* Form Add/Edit */}
@@ -159,6 +167,7 @@ export default function EventsPage() {
             <thead>
               <tr className="bg-gray-100">
                 <th className="border px-4 py-2 text-left">Name</th>
+                <th className="border px-4 py-2 text-left">Slug</th>
                 <th className="border px-4 py-2 text-left">Actions</th>
               </tr>
             </thead>
@@ -166,6 +175,7 @@ export default function EventsPage() {
               {events.map((e) => (
                 <tr key={e.id}>
                   <td className="border px-4 py-2">{e.name}</td>
+                  <td className="border px-4 py-2">{e.slug}</td>
                   <td className="border px-4 py-2 space-x-2">
                     <button
                       className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
