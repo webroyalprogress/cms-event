@@ -9,6 +9,7 @@ interface Product {
   price: number;
   description: string;
   slug: string;
+  excerpt: string | null; // potongan
 }
 
 export default function ProductsPage() {
@@ -145,7 +146,7 @@ export default function ProductsPage() {
                 <tr key={p.id}>
                   <td className="border px-4 py-2">{p.name}</td>
                   <td className="border px-4 py-2">{p.price}</td>
-                  <td className="border px-4 py-2">{p.description}</td>
+                  <td className="border px-4 py-2">{p.excerpt}</td>
                   <td className="border px-4 py-2 space-x-2">
                     <button
                       className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
