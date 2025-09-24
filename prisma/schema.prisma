@@ -19,6 +19,7 @@ model Product {
   price       Float
   slug        String          @unique
   description String? // tanda ? = nullable
+  excerpt     String?
   createdAt   DateTime        @default(now())
   events      ProductEvent[]
 }

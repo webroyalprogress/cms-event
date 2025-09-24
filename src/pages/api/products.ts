@@ -27,6 +27,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             price: Number(price),
             description,
             slug,
+             excerpt: description ? description.slice(0, 100) : null,
           },
         });
 
