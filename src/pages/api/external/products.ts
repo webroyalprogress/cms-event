@@ -17,8 +17,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     switch (req.method) {
       case "GET": {
+        // Include product slug & relasi event lengkap
         const products = await prisma.product.findMany({
-          include: { events: true },
+          include: {
+            events: {
+              include: {
+                event: true, // ambil event lengkap termasuk slug
+              },
+            },
+          },
         });
         return res.status(200).json(products);
       }
