@@ -4,21 +4,42 @@ import { useState, useEffect } from "react";
 
 interface Event {
   id: number;
-  name: string; // Nama event
+  name: string;
+}
+
+interface ApiError {
+  error: string;
 }
 
 export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [name, setName] = useState("");
   const [editingEventId, setEditingEventId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const API_URL = "/api/events";
 
   // Fetch semua events
   const fetchEvents = async () => {
-    const res = await fetch(API_URL);
-    const data = await res.json();
-    setEvents(data);
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(API_URL, { credentials: "include" });
+      const data: Event[] | ApiError = await res.json();
+
+      if ("error" in data) {
+        setError(data.error);
+        setEvents([]);
+      } else {
+        setEvents(data);
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Failed to fetch events");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -28,25 +49,37 @@ export default function EventsPage() {
   // Tambah / Update event
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingEventId) {
-      // Update via query parameter lebih stabil
-      await fetch(`${API_URL}?id=${editingEventId}`, {
-        method: "PUT",
+    setError(null);
+
+    try {
+      const payload = { name };
+      let url = API_URL;
+      let method: "POST" | "PUT" = "POST";
+
+      if (editingEventId) {
+        url = `${API_URL}?id=${editingEventId}`;
+        method = "PUT";
+      }
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
-      });
-      setEditingEventId(null);
-    } else {
-      // Tambah event baru
-      await fetch(API_URL, {
+        body: JSON.stringify(payload),
         credentials: "include",
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
       });
+
+      const data: Event | ApiError = await res.json();
+      if ("error" in data) {
+        setError(data.error);
+      } else {
+        setName("");
+        setEditingEventId(null);
+        fetchEvents();
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Failed to submit event");
     }
-    setName("");
-    fetchEvents();
   };
 
   // Edit button
@@ -58,13 +91,31 @@ export default function EventsPage() {
   // Delete button
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure want to delete this event?")) return;
-    await fetch(`${API_URL}?id=${id}`, { method: "DELETE" });
-    setEvents((prev) => prev.filter((e) => e.id !== id));
+    setError(null);
+
+    try {
+      const res = await fetch(`${API_URL}?id=${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const data: { message?: string; error?: string } = await res.json();
+      if (data.error) {
+        setError(data.error);
+      } else {
+        setEvents((prev) => prev.filter((e) => e.id !== id));
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Failed to delete event");
+    }
   };
 
   return (
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">Events</h1>
+
+      {/* Error message */}
+      {error && <p className="mb-4 text-red-500">{error}</p>}
 
       {/* Form Add/Edit */}
       <div className="mb-6 bg-white p-4 rounded shadow">
@@ -85,7 +136,9 @@ export default function EventsPage() {
           <button
             type="submit"
             className={`px-4 py-2 rounded text-white ${
-              editingEventId ? "bg-yellow-500 hover:bg-yellow-600" : "bg-green-600 hover:bg-green-700"
+              editingEventId
+                ? "bg-yellow-500 hover:bg-yellow-600"
+                : "bg-green-600 hover:bg-green-700"
             }`}
           >
             {editingEventId ? "Update Event" : "Add Event"}
@@ -96,9 +149,12 @@ export default function EventsPage() {
       {/* List Events */}
       <div className="bg-white p-4 rounded shadow">
         <h2 className="text-xl font-semibold mb-4">Event List</h2>
-        {events.length === 0 ? (
+
+        {loading ? (
+          <p>Loading events...</p>
+        ) : events.length === 0 ? (
           <p>No events yet.</p>
-        ) : (
+        ) : Array.isArray(events) ? (
           <table className="w-full table-auto border-collapse">
             <thead>
               <tr className="bg-gray-100">
@@ -128,6 +184,8 @@ export default function EventsPage() {
               ))}
             </tbody>
           </table>
+        ) : (
+          <p>Failed to load events.</p>
         )}
       </div>
     </div>

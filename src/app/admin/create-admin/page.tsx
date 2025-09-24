@@ -12,7 +12,7 @@ export default function CreateAdminPage() {
     e.preventDefault();
     setMessage("Creating admin...");
 
-    const res = await fetch("/api/admin/create", {
+    const res = await fetch("/pages/api/admin/create", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, password }),
