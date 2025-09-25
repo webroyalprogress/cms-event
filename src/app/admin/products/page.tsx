@@ -116,7 +116,7 @@ export default function ProductsPage() {
             <label className="block mb-1 font-medium">Image</label>
             <textarea
               className="w-full border rounded px-3 py-2"
-              value={description}
+              value={image}
               onChange={(e) => setImage(e.target.value)}
               rows={2}
               required
