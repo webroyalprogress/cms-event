@@ -19,7 +19,7 @@ export default function ProductsPage() {
   const [description, setDescription] = useState("");
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
 
-  const API_URL = "/api/external/products";
+  const API_URL = "/api/products";
 
   const fetchProducts = async () => {
     const res = await fetch(API_URL);
