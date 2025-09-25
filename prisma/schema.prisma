@@ -20,6 +20,7 @@ model Product {
   slug        String          @unique
   description String? // tanda ? = nullable
   excerpt     String?
+  image       String?   // <-- baru ditambah
   createdAt   DateTime        @default(now())
   events      ProductEvent[]
 }

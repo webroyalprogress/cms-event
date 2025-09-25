@@ -10,6 +10,7 @@ interface Product {
   description: string; // full
   excerpt: string | null; // potongan
   slug: string;
+  image: string | null;
 }
 
 export default function ProductsPage() {
@@ -17,6 +18,7 @@ export default function ProductsPage() {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
+  const [image, setImage] = useState("");
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
 
   const API_URL = "/api/products";
@@ -39,20 +41,21 @@ export default function ProductsPage() {
       await fetch(API_URL, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: editingProductId, name, price: Number(price), description, slug }),
+        body: JSON.stringify({ id: editingProductId, name, price: Number(price), description, slug, image }),
       });
       setEditingProductId(null);
     } else {
       await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, price: Number(price), description, slug }),
+        body: JSON.stringify({ name, price: Number(price), description, slug, image }),
       });
     }
 
     setName("");
     setPrice("");
     setDescription("");
+    setImage("");
     fetchProducts();
   };
 
@@ -61,6 +64,7 @@ export default function ProductsPage() {
     setName(product.name);
     setPrice(product.price.toString());
     setDescription(product.description); // full description
+    setImage(product.image || "");
   };
 
   const handleDelete = async (id: number) => {
@@ -130,6 +134,7 @@ export default function ProductsPage() {
                 <th className="border px-4 py-2 text-left">Name</th>
                 <th className="border px-4 py-2 text-left">Price</th>
                 <th className="border px-4 py-2 text-left">Description</th>
+                <th className="border px-4 py-2 text-left">Image</th>
                 <th className="border px-4 py-2 text-left">Actions</th>
               </tr>
             </thead>
@@ -139,6 +144,7 @@ export default function ProductsPage() {
                   <td className="border px-4 py-2">{p.name}</td>
                   <td className="border px-4 py-2">{p.price}</td>
                   <td className="border px-4 py-2">{p.excerpt || p.description}</td>
+                  <td className="border px-4 py-2">{p.image}</td>
                   <td className="border px-4 py-2 space-x-2">
                     <button
                       className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"

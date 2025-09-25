@@ -21,18 +21,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           include: {
             events: {
               include: {
-                event: true, // ambil event lengkap termasuk slug
+                event: true, // ambil event lengkap
               },
             },
           },
+          orderBy: { createdAt: "desc" },
         });
         return res.status(200).json(products);
       }
 
       case "POST": {
-        const { name, price, description } = req.body;
-        if (!name || price == null || !description)
-          return res.status(400).json({ error: "Name, price, and description are required" });
+        const { name, price, description, image } = req.body;
+        if (!name || price == null || !description || !image) {
+          return res.status(400).json({ error: "Name, price, description, and image are required" });
+        }
 
         const slug = slugify(name, { lower: true, strict: true });
 
@@ -41,6 +43,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             name,
             price: Number(price),
             description,
+            image,
             slug,
           },
         });
@@ -49,9 +52,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       case "PUT": {
-        const { id, name, price, description } = req.body;
-        if (!id || !name || price == null || !description)
-          return res.status(400).json({ error: "ID, name, price, and description are required" });
+        const { id, name, price, description, image } = req.body;
+        if (!id || !name || price == null || !description || !image) {
+          return res.status(400).json({ error: "ID, name, price, description, and image are required" });
+        }
 
         const slug = slugify(name, { lower: true, strict: true });
 
@@ -61,6 +65,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             name,
             price: Number(price),
             description,
+            image,
             slug,
           },
         });
