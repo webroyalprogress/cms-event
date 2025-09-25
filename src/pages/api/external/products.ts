@@ -17,11 +17,45 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     switch (req.method) {
       case "GET": {
+        const { id, slug } = req.query;
+
+        // 👉 Kalau ada id / slug, balikin single product
+        if (id) {
+          const product = await prisma.product.findUnique({
+            where: { id: Number(id) },
+            include: {
+              events: {
+                include: {
+                  event: true,
+                },
+              },
+            },
+          });
+          if (!product) return res.status(404).json({ error: "Product not found" });
+          return res.status(200).json(product);
+        }
+
+        if (slug) {
+          const product = await prisma.product.findUnique({
+            where: { slug: String(slug) },
+            include: {
+              events: {
+                include: {
+                  event: true,
+                },
+              },
+            },
+          });
+          if (!product) return res.status(404).json({ error: "Product not found" });
+          return res.status(200).json(product);
+        }
+
+        // 👉 Default: balikin semua product
         const products = await prisma.product.findMany({
           include: {
             events: {
               include: {
-                event: true, // ambil event lengkap
+                event: true,
               },
             },
           },
@@ -33,7 +67,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       case "POST": {
         const { name, price, description, image } = req.body;
         if (!name || price == null || !description || !image) {
-          return res.status(400).json({ error: "Name, price, description, and image are required" });
+          return res
+            .status(400)
+            .json({ error: "Name, price, description, and image are required" });
         }
 
         const slug = slugify(name, { lower: true, strict: true });
@@ -54,7 +90,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       case "PUT": {
         const { id, name, price, description, image } = req.body;
         if (!id || !name || price == null || !description || !image) {
-          return res.status(400).json({ error: "ID, name, price, description, and image are required" });
+          return res
+            .status(400)
+            .json({ error: "ID, name, price, description, and image are required" });
         }
 
         const slug = slugify(name, { lower: true, strict: true });
