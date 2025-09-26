@@ -16,60 +16,79 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     switch (req.method) {
+      // =======================
+      // GET Products
+      // =======================
       case "GET": {
         const { id, slug } = req.query;
 
-        // 👉 Kalau ada id / slug, balikin single product
         if (id) {
           const product = await prisma.product.findUnique({
             where: { id: Number(id) },
             include: {
-              events: {
-                include: {
-                  event: true,
-                },
-              },
+              category: true,
+              events: { include: { event: true } },
             },
           });
           if (!product) return res.status(404).json({ error: "Product not found" });
-          return res.status(200).json(product);
+
+          return res.status(200).json({
+            ...product,
+            categoryId: undefined,
+            categorySlug: product.category?.slug || null,
+          });
         }
 
         if (slug) {
           const product = await prisma.product.findUnique({
             where: { slug: String(slug) },
             include: {
-              events: {
-                include: {
-                  event: true,
-                },
-              },
+              category: true,
+              events: { include: { event: true } },
             },
           });
           if (!product) return res.status(404).json({ error: "Product not found" });
-          return res.status(200).json(product);
+
+          return res.status(200).json({
+            ...product,
+            categoryId: undefined,
+            categorySlug: product.category?.slug || null,
+          });
         }
 
-        // 👉 Default: balikin semua product
         const products = await prisma.product.findMany({
           include: {
-            events: {
-              include: {
-                event: true,
-              },
-            },
+            category: true,
+            events: { include: { event: true } },
           },
           orderBy: { createdAt: "desc" },
         });
-        return res.status(200).json(products);
+
+        return res.status(200).json(
+          products.map((p) => ({
+            ...p,
+            categoryId: undefined,
+            categorySlug: p.category?.slug || null,
+          }))
+        );
       }
 
+      // =======================
+      // CREATE Product
+      // =======================
       case "POST": {
-        const { name, price, description, image } = req.body;
-        if (!name || price == null || !description || !image) {
-          return res
-            .status(400)
-            .json({ error: "Name, price, description, and image are required" });
+        const { name, price, description, image, categorySlug } = req.body;
+        if (!name || price == null || !description || !image || !categorySlug) {
+          return res.status(400).json({
+            error: "Name, price, description, image, and categorySlug are required",
+          });
+        }
+
+        const category = await prisma.category.findUnique({
+          where: { slug: categorySlug },
+        });
+        if (!category) {
+          return res.status(400).json({ error: "Invalid category slug" });
         }
 
         const slug = slugify(name, { lower: true, strict: true });
@@ -81,18 +100,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             description,
             image,
             slug,
+            excerpt: description.slice(0, 100),
+            categoryId: category.id,
           },
+          include: { category: true },
         });
 
-        return res.status(201).json(product);
+        return res.status(201).json({
+          ...product,
+          categoryId: undefined,
+          categorySlug: product.category.slug,
+        });
       }
 
+      // =======================
+      // UPDATE Product
+      // =======================
       case "PUT": {
-        const { id, name, price, description, image } = req.body;
-        if (!id || !name || price == null || !description || !image) {
-          return res
-            .status(400)
-            .json({ error: "ID, name, price, description, and image are required" });
+        const { id, name, price, description, image, categorySlug } = req.body;
+        if (!id || !name || price == null || !description || !image || !categorySlug) {
+          return res.status(400).json({
+            error: "ID, name, price, description, image, and categorySlug are required",
+          });
+        }
+
+        const category = await prisma.category.findUnique({
+          where: { slug: categorySlug },
+        });
+        if (!category) {
+          return res.status(400).json({ error: "Invalid category slug" });
         }
 
         const slug = slugify(name, { lower: true, strict: true });
@@ -105,12 +141,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             description,
             image,
             slug,
+            excerpt: description.slice(0, 100),
+            categoryId: category.id,
           },
+          include: { category: true },
         });
 
-        return res.status(200).json(product);
+        return res.status(200).json({
+          ...product,
+          categoryId: undefined,
+          categorySlug: product.category.slug,
+        });
       }
 
+      // =======================
+      // DELETE Product
+      // =======================
       case "DELETE": {
         const { id } = req.query;
         if (!id) return res.status(400).json({ error: "ID required" });

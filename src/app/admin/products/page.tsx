@@ -3,25 +3,36 @@
 import { useState, useEffect } from "react";
 import slugify from "slugify";
 
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+}
+
 interface Product {
   id: number;
   name: string;
   price: number;
-  description: string; // full
-  excerpt: string | null; // potongan
+  description: string;
+  excerpt: string | null;
   slug: string;
   image: string | null;
+  categoryId: number | null;
+  category: Category | null;
 }
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
   const [image, setImage] = useState("");
+  const [category, setCategory] = useState(""); // store category slug
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
 
   const API_URL = "/api/products";
+  const CATEGORY_API = "/api/categories";
 
   const fetchProducts = async () => {
     const res = await fetch(API_URL);
@@ -29,39 +40,42 @@ export default function ProductsPage() {
     setProducts(data);
   };
 
+  const fetchCategories = async () => {
+    const res = await fetch(CATEGORY_API);
+    const data = await res.json();
+    setCategories(data);
+  };
+
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const slug = slugify(name, { lower: true, strict: true });
 
+    const payload = {
+      name,
+      price: Number(price),
+      description,
+      slug,
+      image,
+      categorySlug: category, // ✅ kirim slug, bukan id
+    };
+
     if (editingProductId) {
       await fetch(API_URL, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: editingProductId,
-          name,
-          price: Number(price),
-          description,
-          slug,
-          image,
-        }),
+        body: JSON.stringify({ id: editingProductId, ...payload }),
       });
       setEditingProductId(null);
     } else {
       await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          price: Number(price),
-          description,
-          slug,
-          image,
-        }),
+        body: JSON.stringify(payload),
       });
     }
 
@@ -69,6 +83,7 @@ export default function ProductsPage() {
     setPrice("");
     setDescription("");
     setImage("");
+    setCategory("");
     fetchProducts();
   };
 
@@ -78,6 +93,7 @@ export default function ProductsPage() {
     setPrice(product.price.toString());
     setDescription(product.description);
     setImage(product.image || "");
+    setCategory(product.category?.slug || "");
   };
 
   const handleDelete = async (id: number) => {
@@ -90,7 +106,7 @@ export default function ProductsPage() {
     <div className="max-w-5xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">Products</h1>
 
-      {/* Form Section */}
+      {/* Form */}
       <div className="mb-6 bg-white p-4 rounded shadow">
         <h2 className="text-xl font-semibold mb-4">
           {editingProductId ? "Edit Product" : "Add Product"}
@@ -133,8 +149,23 @@ export default function ProductsPage() {
               value={image}
               onChange={(e) => setImage(e.target.value)}
               rows={2}
-              required
             />
+          </div>
+          <div>
+            <label className="block mb-1 font-medium">Category</label>
+            <select
+              className="w-full border rounded px-3 py-2"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              required
+            >
+              <option value="">-- Select Category --</option>
+              {categories.map((c) => (
+                <option key={c.slug} value={c.slug}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
           </div>
           <button
             type="submit"
@@ -149,7 +180,7 @@ export default function ProductsPage() {
         </form>
       </div>
 
-      {/* Table Section */}
+      {/* Table */}
       <div className="bg-white p-4 rounded shadow overflow-x-auto">
         <h2 className="text-xl font-semibold mb-4">Product List</h2>
         {products.length === 0 ? (
@@ -161,6 +192,7 @@ export default function ProductsPage() {
                 <th className="border px-4 py-2 text-left">Name</th>
                 <th className="border px-4 py-2 text-right">Price</th>
                 <th className="border px-4 py-2 text-left">Description</th>
+                <th className="border px-4 py-2 text-center">Category</th>
                 <th className="border px-4 py-2 text-center">Image</th>
                 <th className="border px-4 py-2 text-center">Actions</th>
               </tr>
@@ -177,6 +209,9 @@ export default function ProductsPage() {
                   </td>
                   <td className="border px-4 py-2 max-w-xs truncate">
                     {p.excerpt || p.description}
+                  </td>
+                  <td className="border px-4 py-2 text-center">
+                    {p.category?.name || "-"}
                   </td>
                   <td className="border px-4 py-2 text-center">
                     {p.image ? (

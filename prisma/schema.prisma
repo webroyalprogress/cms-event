@@ -13,17 +13,29 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Category {
+  id        Int       @id @default(autoincrement())
+  name      String    // e.g. "Food"
+  slug      String    @unique // e.g. "food"
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
 model Product {
   id          Int             @id @default(autoincrement())
   name        String
   price       Float
   slug        String          @unique
-  description String? // tanda ? = nullable
+  description String?
   excerpt     String?
-  image       String?   // <-- baru ditambah
+  image       String?
+  categoryId  Int              // 🔑 tambahin ini
+  category    Category  @relation(fields: [categoryId], references: [id])
   createdAt   DateTime        @default(now())
   events      ProductEvent[]
 }
+
 
 model Event {
   id        Int            @id @default(autoincrement())

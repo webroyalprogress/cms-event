@@ -5,22 +5,43 @@ import slugify from "slugify";
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     switch (req.method) {
+      // =======================
       // GET all products
+      // =======================
       case "GET": {
         const products = await prisma.product.findMany({
+          include: { category: true }, // biar slug category ikut keluar
           orderBy: { createdAt: "desc" },
         });
-        return res.status(200).json(products);
+
+        // ubah categoryId jadi categorySlug di response
+        const data = products.map((p) => ({
+          ...p,
+          categoryId: undefined, // jangan expose id
+          categorySlug: p.category?.slug || null,
+        }));
+
+        return res.status(200).json(data);
       }
 
+      // =======================
       // CREATE product
+      // =======================
       case "POST": {
-        const { name, price, description, image } = req.body;
+        const { name, price, description, image, categorySlug } = req.body;
 
-        if (!name || price == null || !description) {
-          return res
-            .status(400)
-            .json({ error: "Name, price, and description are required" });
+        if (!name || price == null || !description || !categorySlug) {
+          return res.status(400).json({
+            error: "Name, price, description, and categorySlug are required",
+          });
+        }
+
+        // cek kategori berdasarkan slug
+        const category = await prisma.category.findUnique({
+          where: { slug: categorySlug },
+        });
+        if (!category) {
+          return res.status(400).json({ error: "Invalid category slug" });
         }
 
         const slug = slugify(name, { lower: true, strict: true });
@@ -32,21 +53,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             description,
             slug,
             excerpt: description.slice(0, 100),
-            image: image || null, // ⬅️ tambahin
+            image: image || null,
+            categoryId: category.id, // pakai id dari slug
           },
+          include: { category: true },
         });
 
-        return res.status(201).json(product);
+        return res.status(201).json({
+          ...product,
+          categoryId: undefined,
+          categorySlug: product.category.slug,
+        });
       }
 
+      // =======================
       // UPDATE product
+      // =======================
       case "PUT": {
-        const { id, name, price, description, image } = req.body;
+        const { id, name, price, description, image, categorySlug } = req.body;
 
-        if (!id || !name || price == null || !description) {
-          return res
-            .status(400)
-            .json({ error: "ID, name, price, and description are required" });
+        if (!id || !name || price == null || !description || !categorySlug) {
+          return res.status(400).json({
+            error: "ID, name, price, description, and categorySlug are required",
+          });
+        }
+
+        const category = await prisma.category.findUnique({
+          where: { slug: categorySlug },
+        });
+        if (!category) {
+          return res.status(400).json({ error: "Invalid category slug" });
         }
 
         const slug = slugify(name, { lower: true, strict: true });
@@ -59,14 +95,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             description,
             slug,
             excerpt: description.slice(0, 100),
-            image: image || null, // ⬅️ tambahin
+            image: image || null,
+            categoryId: category.id,
           },
+          include: { category: true },
         });
 
-        return res.status(200).json(product);
+        return res.status(200).json({
+          ...product,
+          categoryId: undefined,
+          categorySlug: product.category.slug,
+        });
       }
 
+      // =======================
       // DELETE product
+      // =======================
       case "DELETE": {
         const { id } = req.query;
         if (!id) return res.status(400).json({ error: "ID required" });
