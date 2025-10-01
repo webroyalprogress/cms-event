@@ -16,36 +16,56 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     switch (req.method) {
+      // 🔹 GET semua event
       case "GET": {
-        const events = await prisma.event.findMany();
+        const events = await prisma.event.findMany({
+          orderBy: { createdAt: "desc" },
+        });
         return res.status(200).json(events);
       }
 
+      // 🔹 CREATE event
       case "POST": {
-        const { name } = req.body;
+        const { name, startDate, endDate } = req.body;
         if (!name) return res.status(400).json({ error: "Name is required" });
 
         const slug = slugify(name, { lower: true, strict: true });
 
         const event = await prisma.event.create({
-          data: { name, slug },
+          data: {
+            name,
+            slug,
+            startDate: startDate ? new Date(startDate) : new Date(),
+            endDate: endDate ? new Date(endDate) : null,
+          },
         });
+
         return res.status(201).json(event);
       }
 
+      // 🔹 UPDATE event
       case "PUT": {
-        const { id, name } = req.body;
-        if (!id || !name) return res.status(400).json({ error: "ID and name required" });
+        const { id, name, startDate, endDate } = req.body;
+        if (!id || !name) {
+          return res.status(400).json({ error: "ID and name required" });
+        }
 
         const slug = slugify(name, { lower: true, strict: true });
 
         const event = await prisma.event.update({
           where: { id: Number(id) },
-          data: { name, slug },
+          data: {
+            name,
+            slug,
+            startDate: startDate ? new Date(startDate) : undefined,
+            endDate: endDate ? new Date(endDate) : undefined,
+          },
         });
+
         return res.status(200).json(event);
       }
 
+      // 🔹 DELETE event
       case "DELETE": {
         const { id } = req.query;
         if (!id) return res.status(400).json({ error: "ID required" });

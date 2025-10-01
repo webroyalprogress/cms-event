@@ -40,6 +40,8 @@ model Product {
 model Event {
   id        Int            @id @default(autoincrement())
   name      String
+  startDate DateTime?
+  endDate   DateTime?
   products  ProductEvent[]
   slug      String         @unique
   createdAt DateTime       @default(now())

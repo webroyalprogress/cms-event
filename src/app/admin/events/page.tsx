@@ -7,6 +7,8 @@ interface Event {
   id: number;
   name: string;
   slug: string;
+  startDate?: string; // ISO string dari backend
+  endDate?: string;
 }
 
 interface ApiError {
@@ -16,6 +18,8 @@ interface ApiError {
 export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [name, setName] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [editingEventId, setEditingEventId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,8 +56,8 @@ export default function EventsPage() {
     e.preventDefault();
     setError(null);
 
-    if (!name) {
-      setError("Name is required");
+    if (!name || !startDate || !endDate) {
+      setError("All fields are required");
       return;
     }
 
@@ -63,7 +67,7 @@ export default function EventsPage() {
     try {
       let url = API_URL;
       let method: "POST" | "PUT" = "POST";
-      const payload = { name, slug };
+      const payload = { name, slug, startDate, endDate };
 
       if (editingEventId) {
         url = `${API_URL}?id=${editingEventId}`;
@@ -82,6 +86,8 @@ export default function EventsPage() {
         setError(data.error);
       } else {
         setName("");
+        setStartDate("");
+        setEndDate("");
         setEditingEventId(null);
         fetchEvents();
       }
@@ -95,6 +101,8 @@ export default function EventsPage() {
   const handleEdit = (event: Event) => {
     setEditingEventId(event.id);
     setName(event.name);
+    setStartDate(event.startDate ? event.startDate.slice(0, 16) : "");
+    setEndDate(event.endDate ? event.endDate.slice(0, 16) : "");
   };
 
   // Delete button
@@ -141,6 +149,29 @@ export default function EventsPage() {
               required
             />
           </div>
+
+          <div>
+            <label className="block mb-1 font-medium">Start Date</label>
+            <input
+              type="datetime-local"
+              className="w-full border rounded px-3 py-2"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block mb-1 font-medium">End Date</label>
+            <input
+              type="datetime-local"
+              className="w-full border rounded px-3 py-2"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              required
+            />
+          </div>
+
           <button
             type="submit"
             className={`px-4 py-2 rounded text-white ${
@@ -168,6 +199,8 @@ export default function EventsPage() {
               <tr className="bg-gray-100">
                 <th className="border px-4 py-2 text-left">Name</th>
                 <th className="border px-4 py-2 text-left">Slug</th>
+                <th className="border px-4 py-2 text-left">Start</th>
+                <th className="border px-4 py-2 text-left">End</th>
                 <th className="border px-4 py-2 text-left">Actions</th>
               </tr>
             </thead>
@@ -176,6 +209,12 @@ export default function EventsPage() {
                 <tr key={e.id}>
                   <td className="border px-4 py-2">{e.name}</td>
                   <td className="border px-4 py-2">{e.slug}</td>
+                  <td className="border px-4 py-2">
+                    {e.startDate ? new Date(e.startDate).toLocaleString() : "-"}
+                  </td>
+                  <td className="border px-4 py-2">
+                    {e.endDate ? new Date(e.endDate).toLocaleString() : "-"}
+                  </td>
                   <td className="border px-4 py-2 space-x-2">
                     <button
                       className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
