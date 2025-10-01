@@ -12,7 +12,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     switch (req.method) {
-      // 🔹 GET semua event
       case "GET": {
         const events = await prisma.event.findMany({
           orderBy: { createdAt: "desc" },
@@ -20,7 +19,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(200).json(events);
       }
 
-      // 🔹 CREATE event
       case "POST": {
         const { name, startDate, endDate } = req.body;
         if (!name) return res.status(400).json({ error: "Name is required" });
@@ -39,7 +37,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(201).json(event);
       }
 
-      // 🔹 UPDATE event
       case "PUT": {
         const { id, name, startDate, endDate } = req.body;
         if (!id || !name) {
@@ -61,9 +58,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(200).json(event);
       }
 
-      // 🔹 DELETE event
       case "DELETE": {
-        const { id } = req.query;
+        const { id } = req.body;
         if (!id) return res.status(400).json({ error: "ID required" });
 
         await prisma.event.delete({ where: { id: Number(id) } });

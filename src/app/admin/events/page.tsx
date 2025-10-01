@@ -65,16 +65,15 @@ export default function EventsPage() {
     const slug = slugify(name, { lower: true, strict: true });
 
     try {
-      let url = API_URL;
       let method: "POST" | "PUT" = "POST";
-      const payload = { name, slug, startDate, endDate };
+      let payload: any = { name, slug, startDate, endDate };
 
       if (editingEventId) {
-        url = `${API_URL}?id=${editingEventId}`;
         method = "PUT";
+        payload.id = editingEventId; // 🔥 ID dikirim di body
       }
 
-      const res = await fetch(url, {
+      const res = await fetch(API_URL, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -111,8 +110,10 @@ export default function EventsPage() {
     setError(null);
 
     try {
-      const res = await fetch(`${API_URL}?id=${id}`, {
+      const res = await fetch(API_URL, {
         method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }), // 🔥 kirim id di body
         credentials: "include",
       });
       const data: { message?: string; error?: string } = await res.json();
@@ -210,7 +211,9 @@ export default function EventsPage() {
                   <td className="border px-4 py-2">{e.name}</td>
                   <td className="border px-4 py-2">{e.slug}</td>
                   <td className="border px-4 py-2">
-                    {e.startDate ? new Date(e.startDate).toLocaleString() : "-"}
+                    {e.startDate
+                      ? new Date(e.startDate).toLocaleString()
+                      : "-"}
                   </td>
                   <td className="border px-4 py-2">
                     {e.endDate ? new Date(e.endDate).toLocaleString() : "-"}
