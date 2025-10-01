@@ -71,13 +71,15 @@ export default function EventsPage() {
 
     const slug = slugify(name, { lower: true, strict: true });
 
+    // convert ke UTC ISO string
+    const startISO = new Date(startDate).toISOString();
+    const endISO = new Date(endDate).toISOString();
+
+    const payload: EventPayload = { name, slug, startDate: startISO, endDate: endISO };
+    if (editingEventId) payload.id = editingEventId;
+
     try {
       const method: "POST" | "PUT" = editingEventId ? "PUT" : "POST";
-
-      const payload: EventPayload = { name, slug, startDate, endDate };
-      if (editingEventId) {
-        payload.id = editingEventId;
-      }
 
       const res = await fetch(API_URL, {
         method,
@@ -106,8 +108,12 @@ export default function EventsPage() {
   const handleEdit = (event: Event) => {
     setEditingEventId(event.id);
     setName(event.name);
-    setStartDate(event.startDate ? event.startDate.slice(0, 16) : "");
-    setEndDate(event.endDate ? event.endDate.slice(0, 16) : "");
+
+    // convert ISO ke input datetime-local (YYYY-MM-DDTHH:MM)
+    const startLocal = event.startDate ? new Date(event.startDate).toISOString().slice(0, 16) : "";
+    const endLocal = event.endDate ? new Date(event.endDate).toISOString().slice(0, 16) : "";
+    setStartDate(startLocal);
+    setEndDate(endLocal);
   };
 
   // Delete button
@@ -218,11 +224,13 @@ export default function EventsPage() {
                   <td className="border px-4 py-2">{e.slug}</td>
                   <td className="border px-4 py-2">
                     {e.startDate
-                      ? new Date(e.startDate).toLocaleString()
+                      ? new Date(e.startDate).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })
                       : "-"}
                   </td>
                   <td className="border px-4 py-2">
-                    {e.endDate ? new Date(e.endDate).toLocaleString() : "-"}
+                    {e.endDate
+                      ? new Date(e.endDate).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })
+                      : "-"}
                   </td>
                   <td className="border px-4 py-2 space-x-2">
                     <button
