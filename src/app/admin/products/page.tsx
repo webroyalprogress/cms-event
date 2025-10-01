@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import slugify from "slugify";
+import Image from "next/image";
 
 interface Category {
   id: number;
@@ -21,6 +22,16 @@ interface Product {
   category: Category | null;
 }
 
+interface ProductPayload {
+  id?: number;
+  name: string;
+  price: number;
+  description: string;
+  slug: string;
+  image: string | null;
+  categorySlug: string;
+}
+
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -34,16 +45,26 @@ export default function ProductsPage() {
   const API_URL = "/api/products";
   const CATEGORY_API = "/api/categories";
 
+  // Fetch products
   const fetchProducts = async () => {
-    const res = await fetch(API_URL);
-    const data = await res.json();
-    setProducts(data);
+    try {
+      const res = await fetch(API_URL);
+      const data: Product[] = await res.json();
+      setProducts(data);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
+  // Fetch categories
   const fetchCategories = async () => {
-    const res = await fetch(CATEGORY_API);
-    const data = await res.json();
-    setCategories(data);
+    try {
+      const res = await fetch(CATEGORY_API);
+      const data: Category[] = await res.json();
+      setCategories(data);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   useEffect(() => {
@@ -51,42 +72,47 @@ export default function ProductsPage() {
     fetchCategories();
   }, []);
 
+  // Add / Update product
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const slug = slugify(name, { lower: true, strict: true });
 
-    const payload = {
+    const payload: ProductPayload = {
       name,
       price: Number(price),
       description,
       slug,
-      image,
-      categorySlug: category, // ✅ kirim slug, bukan id
+      image: image || null,
+      categorySlug: category,
     };
 
-    if (editingProductId) {
-      await fetch(API_URL, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: editingProductId, ...payload }),
-      });
-      setEditingProductId(null);
-    } else {
-      await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+    try {
+      if (editingProductId) {
+        await fetch(API_URL, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: editingProductId, ...payload }),
+        });
+        setEditingProductId(null);
+      } else {
+        await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      }
+      setName("");
+      setPrice("");
+      setDescription("");
+      setImage("");
+      setCategory("");
+      fetchProducts();
+    } catch (err) {
+      console.error(err);
     }
-
-    setName("");
-    setPrice("");
-    setDescription("");
-    setImage("");
-    setCategory("");
-    fetchProducts();
   };
 
+  // Edit product
   const handleEdit = (product: Product) => {
     setEditingProductId(product.id);
     setName(product.name);
@@ -96,10 +122,15 @@ export default function ProductsPage() {
     setCategory(product.category?.slug || "");
   };
 
+  // Delete product
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure want to delete this product?")) return;
-    await fetch(`${API_URL}?id=${id}`, { method: "DELETE" });
-    setProducts((prev) => prev.filter((p) => p.id !== id));
+    try {
+      await fetch(`${API_URL}?id=${id}`, { method: "DELETE" });
+      setProducts((prev) => prev.filter((p) => p.id !== id));
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
@@ -215,11 +246,15 @@ export default function ProductsPage() {
                   </td>
                   <td className="border px-4 py-2 text-center">
                     {p.image ? (
-                      <img
-                        src={p.image}
-                        alt={p.name}
-                        className="h-12 w-12 object-cover rounded mx-auto"
-                      />
+                      <div className="relative h-12 w-12 mx-auto">
+                        <Image
+                          src={p.image}
+                          alt={p.name}
+                          fill
+                          style={{ objectFit: "cover" }}
+                          className="rounded"
+                        />
+                      </div>
                     ) : (
                       "-"
                     )}

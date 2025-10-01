@@ -15,6 +15,14 @@ interface ApiError {
   error: string;
 }
 
+interface EventPayload {
+  id?: number;
+  name: string;
+  slug: string;
+  startDate: string;
+  endDate: string;
+}
+
 export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [name, setName] = useState("");
@@ -61,16 +69,14 @@ export default function EventsPage() {
       return;
     }
 
-    // Generate slug otomatis dari name
     const slug = slugify(name, { lower: true, strict: true });
 
     try {
-      let method: "POST" | "PUT" = "POST";
-      let payload: any = { name, slug, startDate, endDate };
+      const method: "POST" | "PUT" = editingEventId ? "PUT" : "POST";
 
+      const payload: EventPayload = { name, slug, startDate, endDate };
       if (editingEventId) {
-        method = "PUT";
-        payload.id = editingEventId; // 🔥 ID dikirim di body
+        payload.id = editingEventId;
       }
 
       const res = await fetch(API_URL, {
@@ -113,7 +119,7 @@ export default function EventsPage() {
       const res = await fetch(API_URL, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }), // 🔥 kirim id di body
+        body: JSON.stringify({ id }),
         credentials: "include",
       });
       const data: { message?: string; error?: string } = await res.json();
