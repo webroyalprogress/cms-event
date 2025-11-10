@@ -21,6 +21,12 @@ export default function AdminSidebar() {
         <Link href="/admin/product-events" className="block py-2 px-3 rounded hover:bg-gray-700">
           Product Events
         </Link>
+        <Link href="/admin/headers" className="block py-2 px-3 rounded hover:bg-gray-700">
+          Headers
+        </Link>
+        <Link href="/admin/logo" className="block py-2 px-3 rounded hover:bg-gray-700">
+          Logo
+        </Link>
      </nav>
       <div className="p-4 border-t border-gray-700">
         <LogoutButton />
