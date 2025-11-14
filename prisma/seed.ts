@@ -5,6 +5,7 @@ const prisma = new PrismaClient();
 async function main() {
   const categories = [
     { name: "MCU", slug: "mcu" },
+    { name: "Fisio", slug: "fisio" },
   ];
 
   for (const cat of categories) {
