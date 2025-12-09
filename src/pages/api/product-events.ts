@@ -1,17 +1,39 @@
+// src/pages/api/product-events.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { verifyAccessToken } from "@/lib/auth";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const session = await getServerSession(req, res, authOptions);
-  if (!session) {
-    return res.redirect("/admin/login"); // kalau mau redirect
-    // atau kalau mau JSON:
-    // return res.status(401).json({ error: "Unauthorized" });
-  }
+// tipe untuk body request
+type ProductEventPayload = {
+  id?: number;
+  productId?: number;
+  eventId?: number;
+};
 
+// helper: cek auth
+async function checkAuth(req: NextApiRequest) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer "))
+    throw new Error("Unauthorized");
+
+  const token = authHeader.split(" ")[1];
   try {
+    return await verifyAccessToken(token);
+  } catch {
+    throw new Error("Unauthorized");
+  }
+}
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  try {
+    // cek JWT
+    await checkAuth(req);
+
+    const body: ProductEventPayload = req.body;
+
     switch (req.method) {
       case "GET": {
         const productEvents = await prisma.productEvent.findMany({
@@ -21,9 +43,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       case "POST": {
-        const body = req.body;
         if (!body.productId || !body.eventId) {
-          return res.status(400).json({ error: "Missing productId or eventId" });
+          return res
+            .status(400)
+            .json({ error: "Missing productId or eventId" });
         }
 
         const productEvent = await prisma.productEvent.create({
@@ -32,13 +55,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             eventId: body.eventId,
           },
         });
+
         return res.status(201).json(productEvent);
       }
 
       case "PUT": {
-        const body = req.body;
         if (!body.id || !body.productId || !body.eventId) {
-          return res.status(400).json({ error: "Missing id, productId or eventId" });
+          return res
+            .status(400)
+            .json({ error: "Missing id, productId or eventId" });
         }
 
         const productEvent = await prisma.productEvent.update({
@@ -48,11 +73,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             eventId: body.eventId,
           },
         });
+
         return res.status(200).json(productEvent);
       }
 
       case "DELETE": {
-        const body = req.body;
         if (!body.id) {
           return res.status(400).json({ error: "Missing id" });
         }
@@ -64,8 +89,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       default:
         return res.status(405).json({ error: "Method not allowed" });
     }
-  } catch (err) {
-    console.error("API error:", err);
-    return res.status(500).json({ error: "Internal server error" });
+  } catch (err: any) {
+    console.error("Product Events API error:", err);
+    return res
+      .status(err.message === "Unauthorized" ? 401 : 500)
+      .json({ error: err.message || "Internal server error" });
   }
 }

@@ -12,21 +12,25 @@ export default function CreateAdminPage() {
     e.preventDefault();
     setMessage("Creating admin...");
 
-    const res = await fetch("/pages/api/admin/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
-    });
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (res.ok) {
-      setMessage(`✅ ${data.message}: ${data.user.email}`);
-      setName("");
-      setEmail("");
-      setPassword("");
-    } else {
-      setMessage(`❌ ${data.error}`);
+      if (res.ok) {
+        setMessage(`✅ ${data.message}: ${data.user.email}`);
+        setName("");
+        setEmail("");
+        setPassword("");
+      } else {
+        setMessage(`❌ ${data.message || data.error}`);
+      }
+    } catch (err: any) {
+      setMessage(`❌ ${err.message || "Error creating admin"}`);
     }
   };
 

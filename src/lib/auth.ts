@@ -1,64 +1,44 @@
-import type { NextAuthOptions } from "next-auth"
-import CredentialsProvider from "next-auth/providers/credentials"
-import { prisma } from "./prisma"
-import * as bcrypt from "bcryptjs"
+// src/lib/auth.ts
+import { hash, compare } from "bcryptjs";
+import { SignJWT, jwtVerify, JWTPayload } from "jose";
+import type { NextApiRequest } from "next";
 
-// tipe user kustom
-type AuthUser = {
-  id: string
-  email: string
-  name?: string
-}
+const ACCESS_SECRET = new TextEncoder().encode(process.env.JWT_ACCESS_SECRET!);
+const REFRESH_SECRET = new TextEncoder().encode(process.env.JWT_REFRESH_SECRET!);
+const ACCESS_EXP = "15m";
+const REFRESH_EXP = "30d";
 
-export const authOptions: NextAuthOptions = {
-  providers: [
-    CredentialsProvider({
-      name: "Admin",
-      credentials: {
-        email: { label: "Email", type: "text" },
-        password: { label: "Password", type: "password" },
-      },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null
+// password
+export const hashPassword = (pw: string) => hash(pw, 10);
+export const comparePassword = (pw: string, hashPw: string) => compare(pw, hashPw);
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-        })
-        if (!user) return null
+// JWT
+export const signAccessToken = async (payload: Record<string, any>) =>
+  new SignJWT(payload)
+    .setProtectedHeader({ alg: "HS256" })
+    .setExpirationTime(ACCESS_EXP)
+    .sign(ACCESS_SECRET);
 
-        const isValid = await bcrypt.compare(credentials.password, user.password)
-        if (!isValid) return null
+export const signRefreshToken = async (payload: Record<string, any>) =>
+  new SignJWT(payload)
+    .setProtectedHeader({ alg: "HS256" })
+    .setExpirationTime(REFRESH_EXP)
+    .sign(REFRESH_SECRET);
 
-        return {
-          id: user.id.toString(),
-          email: user.email,
-          name: user.name ?? undefined,
-        }
-      },
-    }),
-  ],
+export const verifyAccessToken = async (token: string): Promise<JWTPayload> =>
+  (await jwtVerify(token, ACCESS_SECRET)).payload;
 
-  session: {
-    strategy: "jwt",
-  },
+export const verifyRefreshToken = async (token: string): Promise<JWTPayload> =>
+  (await jwtVerify(token, REFRESH_SECRET)).payload;
 
-  pages: {
-    signIn: "/auth/login",
-  },
-
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        const u = user as AuthUser
-        token.id = u.id
-        token.email = u.email
-      }
-      return token
-    },
-    async session({ session, token }) {
-      if (token?.id) session.user.id = token.id as string
-      if (token?.email) session.user.email = token.email as string
-      return session
-    },
-  },
+// helper: parse cookies
+export function parseCookies(req: NextApiRequest) {
+  const raw = req.headers.cookie;
+  if (!raw) return {};
+  return Object.fromEntries(
+    raw.split(";").map((c) => {
+      const [k, ...v] = c.trim().split("=");
+      return [k, decodeURIComponent(v.join("="))];
+    })
+  );
 }

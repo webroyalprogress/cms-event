@@ -23,61 +23,96 @@ export default function ProductEventsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<number | null>(null);
-  const [selectedEvents, setSelectedEvents] = useState<number[]>([]); // multi select
+  const [selectedEvents, setSelectedEvents] = useState<number[]>([]);
 
   const API_URL = "/api/product-events";
   const API_PRODUCTS = "/api/products";
   const API_EVENTS = "/api/events";
 
-  // Fetch semua data
+  // -----------------------------------------
+  // Reusable fetch with Authorization support
+  // -----------------------------------------
+  const fetchAuth = async (url: string, options: RequestInit = {}) => {
+    try {
+      const res = await fetch(url, {
+        ...options,
+        headers: {
+          "Content-Type": "application/json",
+          ...(options.headers || {}),
+          // kalau pernah punya token tinggal masukin di sini
+          // Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      const data = await res.json();
+      return data;
+    } catch (error) {
+      console.error("[fetchAuth] Error:", error);
+      return null;
+    }
+  };
+
+  // -----------------------------------------
+  // Fetch all initial data
+  // -----------------------------------------
   const fetchData = async () => {
-    const [peRes, pRes, eRes] = await Promise.all([
-      fetch(API_URL),
-      fetch(API_PRODUCTS),
-      fetch(API_EVENTS),
-    ]);
-
     const [peData, pData, eData] = await Promise.all([
-      peRes.json(),
-      pRes.json(),
-      eRes.json(),
+      fetchAuth(API_URL),
+      fetchAuth(API_PRODUCTS),
+      fetchAuth(API_EVENTS),
     ]);
 
-    setProductEvents(peData);
-    setProducts(pData);
-    setEvents(eData);
+    // Guard agar tidak error kalau API return error object
+    setProductEvents(Array.isArray(peData) ? peData : []);
+    setProducts(Array.isArray(pData) ? pData : []);
+    setEvents(Array.isArray(eData) ? eData : []);
   };
 
   useEffect(() => {
     fetchData();
   }, []);
 
-  // Submit multi-select
+  // -----------------------------------------
+  // Handle multi-submit
+  // -----------------------------------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProduct || selectedEvents.length === 0) return;
 
-    // kirim satu per satu
     for (const eventId of selectedEvents) {
-      await fetch(API_URL, {
+      await fetchAuth(API_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId: selectedProduct, eventId }),
+        body: JSON.stringify({
+          productId: selectedProduct,
+          eventId,
+        }),
       });
     }
 
+    // reset form
     setSelectedProduct(null);
     setSelectedEvents([]);
+
+    // refresh list
     fetchData();
   };
 
-  // Delete button
+  // -----------------------------------------
+  // Delete Relationship
+  // -----------------------------------------
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure want to remove this relation?")) return;
-    await fetch(`${API_URL}?id=${id}`, { method: "DELETE" });
+
+    await fetchAuth(`${API_URL}?id=${id}`, {
+      method: "DELETE",
+    });
+
     setProductEvents((prev) => prev.filter((pe) => pe.id !== id));
   };
 
+  // -----------------------------------------
+  // Render UI
+  // -----------------------------------------
   return (
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">Product Events (Multi-Assign)</h1>
@@ -85,7 +120,9 @@ export default function ProductEventsPage() {
       {/* Form Multi-Select */}
       <div className="mb-6 bg-white p-4 rounded shadow">
         <h2 className="text-xl font-semibold mb-4">Assign Product to Multiple Events</h2>
+
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Product Dropdown */}
           <div>
             <label className="block mb-1 font-medium">Product</label>
             <select
@@ -103,6 +140,7 @@ export default function ProductEventsPage() {
             </select>
           </div>
 
+          {/* Events Multi Select */}
           <div>
             <label className="block mb-1 font-medium">Events (Multi-Select)</label>
             <select
@@ -110,7 +148,9 @@ export default function ProductEventsPage() {
               multiple
               value={selectedEvents.map(String)}
               onChange={(e) =>
-                setSelectedEvents(Array.from(e.target.selectedOptions, (o) => Number(o.value)))
+                setSelectedEvents(
+                  Array.from(e.target.selectedOptions, (o) => Number(o.value))
+                )
               }
               required
             >
@@ -131,9 +171,10 @@ export default function ProductEventsPage() {
         </form>
       </div>
 
-      {/* List ProductEvents */}
+      {/* Table List */}
       <div className="bg-white p-4 rounded shadow">
         <h2 className="text-xl font-semibold mb-4">Relations List</h2>
+
         {productEvents.length === 0 ? (
           <p>No relations yet.</p>
         ) : (
@@ -145,11 +186,12 @@ export default function ProductEventsPage() {
                 <th className="border px-4 py-2 text-left">Actions</th>
               </tr>
             </thead>
+
             <tbody>
               {productEvents.map((pe) => (
                 <tr key={pe.id}>
-                  <td className="border px-4 py-2">{pe.product.name}</td>
-                  <td className="border px-4 py-2">{pe.event.name}</td>
+                  <td className="border px-4 py-2">{pe.product?.name}</td>
+                  <td className="border px-4 py-2">{pe.event?.name}</td>
                   <td className="border px-4 py-2 space-x-2">
                     <button
                       className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"

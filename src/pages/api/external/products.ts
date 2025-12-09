@@ -5,7 +5,7 @@ import bcrypt from "bcryptjs";
 import slugify from "slugify";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // 🔒 Auth pakai Bearer Token
+  // Auth Bearer Token
   const authHeader = req.headers.authorization;
   const token = authHeader?.split(" ")[1];
 
@@ -56,6 +56,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           });
         }
 
+        // Fetch all products
         const products = await prisma.product.findMany({
           include: {
             category: true,
@@ -64,13 +65,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           orderBy: { createdAt: "desc" },
         });
 
-        return res.status(200).json(
-          products.map((p) => ({
-            ...p,
-            categoryId: undefined,
-            categorySlug: p.category?.slug || null,
-          }))
-        );
+        // ⭐ FIX: add type annotation here
+        const formatted = products.map((p: typeof products[number]) => ({
+          ...p,
+          categoryId: undefined,
+          categorySlug: p.category?.slug ?? null,
+        }));
+
+        return res.status(200).json(formatted);
       }
 
       // =======================
@@ -78,6 +80,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // =======================
       case "POST": {
         const { name, price, description, image, categorySlug } = req.body;
+
         if (!name || price == null || !description || !image || !categorySlug) {
           return res.status(400).json({
             error: "Name, price, description, image, and categorySlug are required",
@@ -118,6 +121,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // =======================
       case "PUT": {
         const { id, name, price, description, image, categorySlug } = req.body;
+
         if (!id || !name || price == null || !description || !image || !categorySlug) {
           return res.status(400).json({
             error: "ID, name, price, description, image, and categorySlug are required",

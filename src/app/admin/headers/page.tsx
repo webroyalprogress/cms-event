@@ -34,37 +34,36 @@ export default function HeadersPage() {
   const [error, setError] = useState<string | null>(null);
 
   const API_URL = "/api/headers";
-  const EVENT_API_URL = "/api/events"; // Ambil event dari Neon DB
+  const EVENT_API_URL = "/api/events";
 
-  // Fetch semua header
+  // Fetch headers
   const fetchHeaders = async () => {
     setLoading(true);
     setError(null);
     try {
       const res = await fetch(API_URL, { credentials: "include" });
-      const data: Header[] | ApiError = await res.json();
-      if ("error" in data) {
-        setError(data.error);
-        setHeaders([]);
-      } else {
-        setHeaders(data);
-      }
+      const json = await res.json();
+      const data: Header[] = Array.isArray(json) ? json : json.data || [];
+      setHeaders(data);
     } catch (err) {
-      console.error(err);
+      console.error("Fetch headers error:", err);
       setError("Failed to fetch headers");
+      setHeaders([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch semua event
+  // Fetch events
   const fetchEvents = async () => {
     try {
       const res = await fetch(EVENT_API_URL, { credentials: "include" });
-      const data: Event[] = await res.json();
+      const json = await res.json();
+      const data: Event[] = Array.isArray(json) ? json : json.data || [];
       setEvents(data);
     } catch (err) {
-      console.error("Failed to fetch events", err);
+      console.error("Fetch events error:", err);
+      setEvents([]);
     }
   };
 
@@ -73,7 +72,7 @@ export default function HeadersPage() {
     fetchEvents();
   }, []);
 
-  // Tambah / Update header
+  // Submit add/update
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -83,7 +82,7 @@ export default function HeadersPage() {
       return;
     }
 
-    const payload = { judul, deskripsi,deskripsi2, event, icon };
+    const payload = { judul, deskripsi, deskripsi2, event, icon };
     const method: "POST" | "PUT" = editingId ? "PUT" : "POST";
     const url = editingId ? `${API_URL}?id=${editingId}` : API_URL;
 
@@ -95,9 +94,11 @@ export default function HeadersPage() {
         credentials: "include",
       });
       const data: Header | ApiError = await res.json();
+
       if ("error" in data) {
         setError(data.error);
       } else {
+        // Reset form
         setJudul("");
         setDeskripsi("");
         setDeskripsi2("");
@@ -107,22 +108,22 @@ export default function HeadersPage() {
         fetchHeaders();
       }
     } catch (err) {
-      console.error(err);
+      console.error("Submit header error:", err);
       setError("Failed to submit header");
     }
   };
 
-  // Edit button
-  const handleEdit = (header: Header) => {
-    setEditingId(header.id);
-    setJudul(header.judul);
-    setDeskripsi(header.deskripsi);
-    setDeskripsi2(header.deskripsi2);
-    setEvent(header.event);
-    setIcon(header.icon);
+  // Edit
+  const handleEdit = (h: Header) => {
+    setEditingId(h.id);
+    setJudul(h.judul);
+    setDeskripsi(h.deskripsi);
+    setDeskripsi2(h.deskripsi2);
+    setEvent(h.event);
+    setIcon(h.icon);
   };
 
-  // Delete button
+  // Delete
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure want to delete this header?")) return;
     setError(null);
@@ -140,7 +141,7 @@ export default function HeadersPage() {
         setHeaders((prev) => prev.filter((h) => h.id !== id));
       }
     } catch (err) {
-      console.error(err);
+      console.error("Delete header error:", err);
       setError("Failed to delete header");
     }
   };
@@ -153,7 +154,9 @@ export default function HeadersPage() {
 
       {/* Form Add/Edit */}
       <div className="mb-6 bg-white p-4 rounded shadow">
-        <h2 className="text-xl font-semibold mb-4">{editingId ? "Edit Header" : "Add Header"}</h2>
+        <h2 className="text-xl font-semibold mb-4">
+          {editingId ? "Edit Header" : "Add Header"}
+        </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block mb-1 font-medium">Judul</label>
@@ -182,7 +185,6 @@ export default function HeadersPage() {
               className="w-full border rounded px-3 py-2"
               value={deskripsi2}
               onChange={(e) => setDeskripsi2(e.target.value)}
-             
             />
           </div>
 
@@ -225,7 +227,7 @@ export default function HeadersPage() {
         </form>
       </div>
 
-      {/* List Headers */}
+      {/* Header List */}
       <div className="bg-white p-4 rounded shadow">
         <h2 className="text-xl font-semibold mb-4">Header List</h2>
 

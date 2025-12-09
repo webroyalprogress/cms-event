@@ -1,49 +1,49 @@
-"use client"
-
-import { signIn } from "next-auth/react"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+"use client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
-  const router = useRouter()
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
+    e.preventDefault();
+    setLoading(true);
+    setError("");
 
-    const res = await signIn("credentials", {
-      redirect: false, // ⬅️ wajib false biar kita bisa handle sendiri
-      email,
-      password,
-    })
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
-    setLoading(false)
+      const data = await res.json();
 
-    if (!res) {
-      setError("No response from server")
-      return
+      if (!res.ok) {
+        setError(data.error || "Login failed");
+      } else {
+        // simpan token di localStorage atau cookie
+        localStorage.setItem("accessToken", data.accessToken);
+        router.push("/admin/dashboard");
+      }
+    } catch (err: any) {
+      setError(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
     }
-
-    if (res.error) {
-      setError("Login failed: " + res.error)
-    } else {
-      router.push("/admin/dashboard") // ⬅️ lebih baik dari window.location.href
-    }
-  }
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100">
       <form
-        className="bg-white p-8 rounded shadow-md w-full max-w-sm"
         onSubmit={handleLogin}
+        className="bg-white p-8 rounded shadow-md w-full max-w-sm"
       >
         <h1 className="text-2xl font-bold mb-6 text-center">Admin Login</h1>
-
         {error && <p className="text-red-500 mb-4">{error}</p>}
 
         <input
@@ -71,5 +71,5 @@ export default function LoginPage() {
         </button>
       </form>
     </div>
-  )
+  );
 }

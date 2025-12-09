@@ -39,7 +39,7 @@ export default function ProductsPage() {
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
   const [image, setImage] = useState("");
-  const [category, setCategory] = useState(""); // store category slug
+  const [category, setCategory] = useState(""); // slug
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
 
   const API_URL = "/api/products";
@@ -49,10 +49,14 @@ export default function ProductsPage() {
   const fetchProducts = async () => {
     try {
       const res = await fetch(API_URL);
-      const data: Product[] = await res.json();
+      const json = await res.json();
+
+      // Pastikan selalu array
+      const data: Product[] = Array.isArray(json) ? json : json.data || [];
       setProducts(data);
     } catch (err) {
-      console.error(err);
+      console.error("Fetch products error:", err);
+      setProducts([]);
     }
   };
 
@@ -60,10 +64,12 @@ export default function ProductsPage() {
   const fetchCategories = async () => {
     try {
       const res = await fetch(CATEGORY_API);
-      const data: Category[] = await res.json();
+      const json = await res.json();
+      const data: Category[] = Array.isArray(json) ? json : json.data || [];
       setCategories(data);
     } catch (err) {
-      console.error(err);
+      console.error("Fetch categories error:", err);
+      setCategories([]);
     }
   };
 
@@ -75,8 +81,10 @@ export default function ProductsPage() {
   // Add / Update product
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const slug = slugify(name, { lower: true, strict: true });
 
+    if (!name || !price || !description || !category) return;
+
+    const slug = slugify(name, { lower: true, strict: true });
     const payload: ProductPayload = {
       name,
       price: Number(price),
@@ -101,14 +109,17 @@ export default function ProductsPage() {
           body: JSON.stringify(payload),
         });
       }
+
+      // Reset form
       setName("");
       setPrice("");
       setDescription("");
       setImage("");
       setCategory("");
+
       fetchProducts();
     } catch (err) {
-      console.error(err);
+      console.error("Submit product error:", err);
     }
   };
 
@@ -125,11 +136,12 @@ export default function ProductsPage() {
   // Delete product
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure want to delete this product?")) return;
+
     try {
       await fetch(`${API_URL}?id=${id}`, { method: "DELETE" });
       setProducts((prev) => prev.filter((p) => p.id !== id));
     } catch (err) {
-      console.error(err);
+      console.error("Delete product error:", err);
     }
   };
 
@@ -142,6 +154,7 @@ export default function ProductsPage() {
         <h2 className="text-xl font-semibold mb-4">
           {editingProductId ? "Edit Product" : "Add Product"}
         </h2>
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block mb-1 font-medium">Product Name</label>
@@ -153,6 +166,7 @@ export default function ProductsPage() {
               required
             />
           </div>
+
           <div>
             <label className="block mb-1 font-medium">Price</label>
             <input
@@ -163,6 +177,7 @@ export default function ProductsPage() {
               required
             />
           </div>
+
           <div>
             <label className="block mb-1 font-medium">Description</label>
             <textarea
@@ -173,6 +188,7 @@ export default function ProductsPage() {
               required
             />
           </div>
+
           <div>
             <label className="block mb-1 font-medium">Image (URL)</label>
             <textarea
@@ -182,6 +198,7 @@ export default function ProductsPage() {
               rows={2}
             />
           </div>
+
           <div>
             <label className="block mb-1 font-medium">Category</label>
             <select
@@ -198,6 +215,7 @@ export default function ProductsPage() {
               ))}
             </select>
           </div>
+
           <button
             type="submit"
             className={`px-4 py-2 rounded text-white ${
@@ -214,6 +232,7 @@ export default function ProductsPage() {
       {/* Table */}
       <div className="bg-white p-4 rounded shadow overflow-x-auto">
         <h2 className="text-xl font-semibold mb-4">Product List</h2>
+
         {products.length === 0 ? (
           <p>No products yet.</p>
         ) : (
@@ -228,12 +247,10 @@ export default function ProductsPage() {
                 <th className="border px-4 py-2 text-center">Actions</th>
               </tr>
             </thead>
+
             <tbody>
               {products.map((p, i) => (
-                <tr
-                  key={p.id}
-                  className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                >
+                <tr key={p.id} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                   <td className="border px-4 py-2">{p.name}</td>
                   <td className="border px-4 py-2 text-right">
                     Rp {p.price.toLocaleString()}
@@ -241,9 +258,7 @@ export default function ProductsPage() {
                   <td className="border px-4 py-2 max-w-xs truncate">
                     {p.excerpt || p.description}
                   </td>
-                  <td className="border px-4 py-2 text-center">
-                    {p.category?.name || "-"}
-                  </td>
+                  <td className="border px-4 py-2 text-center">{p.category?.name || "-"}</td>
                   <td className="border px-4 py-2 text-center">
                     {p.image ? (
                       <div className="relative h-12 w-12 mx-auto">
@@ -276,6 +291,7 @@ export default function ProductsPage() {
                 </tr>
               ))}
             </tbody>
+
           </table>
         )}
       </div>

@@ -7,7 +7,7 @@ interface Event {
   id: number;
   name: string;
   slug: string;
-  startDate?: string; // ISO string dari backend
+  startDate?: string;
   endDate?: string;
 }
 
@@ -70,8 +70,6 @@ export default function EventsPage() {
     }
 
     const slug = slugify(name, { lower: true, strict: true });
-
-    // convert ke UTC ISO string
     const startISO = new Date(startDate).toISOString();
     const endISO = new Date(endDate).toISOString();
 
@@ -80,8 +78,9 @@ export default function EventsPage() {
 
     try {
       const method: "POST" | "PUT" = editingEventId ? "PUT" : "POST";
+      const url = editingEventId ? `${API_URL}?id=${editingEventId}` : API_URL;
 
-      const res = await fetch(API_URL, {
+      const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -109,9 +108,8 @@ export default function EventsPage() {
     setEditingEventId(event.id);
     setName(event.name);
 
-    // convert ISO ke input datetime-local (YYYY-MM-DDTHH:MM)
-    const startLocal = event.startDate ? new Date(event.startDate).toISOString().slice(0, 16) : "";
-    const endLocal = event.endDate ? new Date(event.endDate).toISOString().slice(0, 16) : "";
+    const startLocal = event.startDate ? event.startDate.slice(0, 16) : "";
+    const endLocal = event.endDate ? event.endDate.slice(0, 16) : "";
     setStartDate(startLocal);
     setEndDate(endLocal);
   };
@@ -128,6 +126,7 @@ export default function EventsPage() {
         body: JSON.stringify({ id }),
         credentials: "include",
       });
+
       const data: { message?: string; error?: string } = await res.json();
       if (data.error) {
         setError(data.error);
@@ -148,9 +147,7 @@ export default function EventsPage() {
 
       {/* Form Add/Edit */}
       <div className="mb-6 bg-white p-4 rounded shadow">
-        <h2 className="text-xl font-semibold mb-4">
-          {editingEventId ? "Edit Event" : "Add Event"}
-        </h2>
+        <h2 className="text-xl font-semibold mb-4">{editingEventId ? "Edit Event" : "Add Event"}</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block mb-1 font-medium">Event Name</label>
@@ -188,9 +185,7 @@ export default function EventsPage() {
           <button
             type="submit"
             className={`px-4 py-2 rounded text-white ${
-              editingEventId
-                ? "bg-yellow-500 hover:bg-yellow-600"
-                : "bg-green-600 hover:bg-green-700"
+              editingEventId ? "bg-yellow-500 hover:bg-yellow-600" : "bg-green-600 hover:bg-green-700"
             }`}
           >
             {editingEventId ? "Update Event" : "Add Event"}
@@ -206,7 +201,7 @@ export default function EventsPage() {
           <p>Loading events...</p>
         ) : events.length === 0 ? (
           <p>No events yet.</p>
-        ) : Array.isArray(events) ? (
+        ) : (
           <table className="w-full table-auto border-collapse">
             <thead>
               <tr className="bg-gray-100">
@@ -250,8 +245,6 @@ export default function EventsPage() {
               ))}
             </tbody>
           </table>
-        ) : (
-          <p>Failed to load events.</p>
         )}
       </div>
     </div>

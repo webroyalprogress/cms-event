@@ -1,14 +1,21 @@
-"use client"
+"use client";
 
-import { signOut } from "next-auth/react"
+import { useRouter } from "next/navigation";
 
 export default function LogoutButton() {
+  const router = useRouter();
+
   const handleLogout = async () => {
-    await signOut({
-      redirect: true, // ⬅️ default true, biar langsung redirect
-      callbackUrl: "/admin/login", // ⬅️ tujuan setelah logout
-    })
-  }
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+      });
+
+      router.push("/admin/login"); // redirect setelah logout
+    } catch (err) {
+      console.error("Logout failed:", err);
+    }
+  };
 
   return (
     <button
@@ -17,5 +24,5 @@ export default function LogoutButton() {
     >
       Logout
     </button>
-  )
+  );
 }

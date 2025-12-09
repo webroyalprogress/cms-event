@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // 🔒 Auth pakai Bearer Token
+  // Auth Bearer Token
   const authHeader = req.headers.authorization;
   const token = authHeader?.split(" ")[1];
 
@@ -15,18 +15,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const { slug } = req.query;
+
     if (!slug || typeof slug !== "string") {
       return res.status(400).json({ error: "Category slug required" });
     }
 
-    // Cari category berdasarkan slug
-    const category = await prisma.category.findUnique({
-      where: { slug },
-    });
+    const category = await prisma.category.findUnique({ where: { slug } });
 
     if (!category) return res.status(404).json({ error: "Category not found" });
 
-    // Cari produk berdasarkan categoryId
     const products = await prisma.product.findMany({
       where: { categoryId: category.id },
       include: {
@@ -36,11 +33,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       orderBy: { createdAt: "desc" },
     });
 
-    // Format response biar mirip API external product
-    const data = products.map((p) => ({
-      ...p,
-      categoryId: undefined, // jangan expose id
-      categorySlug: p.category?.slug || null,
+    // FIX: kasih tipe aman biar p tidak any
+    const data = products.map((p: typeof products[number]) => ({
+      id: p.id,
+      name: p.name,
+      price: p.price,
+      description: p.description,
+      slug: p.slug,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+      image: p.image,
+      excerpt: p.excerpt,
+      categorySlug: p.category?.slug ?? null,
+      events: p.events,
     }));
 
     return res.status(200).json(data);
