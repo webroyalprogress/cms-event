@@ -10,17 +10,6 @@ type EventPayload = {
   endDate: string;
 };
 
-// Tipe Event manual
-type EventType = {
-  id: number;
-  name: string;
-  slug: string;
-  startDate: Date | null;
-  endDate: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
 // Convert datetime-local input ke UTC
 const parseToUTC = (dateStr: string) => {
   const d = new Date(dateStr);
@@ -34,11 +23,13 @@ export default async function handler(
   try {
     switch (req.method) {
       case "GET": {
-        const events: EventType[] = await prisma.event.findMany({
+        // Ambil semua events (Prisma infer type otomatis)
+        const events = await prisma.event.findMany({
           orderBy: { createdAt: "desc" },
         });
 
-        const formatted = events.map((e: EventType) => ({
+        // Map ke ISO string untuk startDate & endDate
+        const formatted = events.map((e: typeof events[number]) => ({
           ...e,
           startDate: e.startDate?.toISOString() ?? null,
           endDate: e.endDate?.toISOString() ?? null,
@@ -57,7 +48,7 @@ export default async function handler(
 
         const slug = slugify(name, { lower: true, strict: true });
 
-        const event: EventType = await prisma.event.create({
+        const event = await prisma.event.create({
           data: {
             name,
             slug,
@@ -84,7 +75,7 @@ export default async function handler(
 
         const slug = slugify(name, { lower: true, strict: true });
 
-        const event: EventType = await prisma.event.update({
+        const event = await prisma.event.update({
           where: { id },
           data: {
             name,
@@ -114,8 +105,6 @@ export default async function handler(
     }
   } catch (err: any) {
     console.error("Events API error:", err);
-    return res
-      .status(500)
-      .json({ error: err.message || "Internal server error" });
+    return res.status(500).json({ error: err.message || "Internal server error" });
   }
 }

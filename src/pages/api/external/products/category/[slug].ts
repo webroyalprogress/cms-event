@@ -41,7 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       description: p.description,
       slug: p.slug,
       createdAt: p.createdAt,
-      updatedAt: p.updatedAt,
+      // updatedAt: p.updatedAt,
       image: p.image,
       excerpt: p.excerpt,
       categorySlug: p.category?.slug ?? null,
