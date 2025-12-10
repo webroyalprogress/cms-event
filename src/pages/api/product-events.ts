@@ -78,11 +78,17 @@ export default async function handler(
       }
 
       case "DELETE": {
-        if (!body.id) {
+        // 🔥 FIX UTAMA — ambil ID dari query, bukan body
+        const id = Number(req.query.id);
+
+        if (!id) {
           return res.status(400).json({ error: "Missing id" });
         }
 
-        await prisma.productEvent.delete({ where: { id: body.id } });
+        await prisma.productEvent.delete({
+          where: { id },
+        });
+
         return res.status(200).json({ message: "Relation deleted" });
       }
 
