@@ -45,7 +45,7 @@ export default function ProductsPage() {
   const API_URL = "/api/products";
   const CATEGORY_API = "/api/categories";
 
-  const getToken = () => localStorage.getItem("access_token") || "";
+  const getToken = () => localStorage.getItem("accessToken") || "";
 
   // Fetch products
   const fetchProducts = async () => {
