@@ -39,7 +39,7 @@ export default function ProductEventsPage() {
         headers: {
           "Content-Type": "application/json",
           ...(options.headers || {}),
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
       });
 
