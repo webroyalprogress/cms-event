@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const cookies = parseCookies(req);
-  const access = cookies["access_token"];
+  const access = cookies["accessToken"];
   if (!access) return res.status(401).json({ message: "No token" });
 
   try {
