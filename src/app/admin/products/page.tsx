@@ -45,13 +45,18 @@ export default function ProductsPage() {
   const API_URL = "/api/products";
   const CATEGORY_API = "/api/categories";
 
+  const getToken = () => localStorage.getItem("access_token") || "";
+
   // Fetch products
   const fetchProducts = async () => {
     try {
-      const res = await fetch(API_URL);
-      const json = await res.json();
+      const token = getToken();
 
-      // Pastikan selalu array
+      const res = await fetch(API_URL, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const json = await res.json();
       const data: Product[] = Array.isArray(json) ? json : json.data || [];
       setProducts(data);
     } catch (err) {
@@ -63,7 +68,12 @@ export default function ProductsPage() {
   // Fetch categories
   const fetchCategories = async () => {
     try {
-      const res = await fetch(CATEGORY_API);
+      const token = getToken();
+
+      const res = await fetch(CATEGORY_API, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
       const json = await res.json();
       const data: Category[] = Array.isArray(json) ? json : json.data || [];
       setCategories(data);
@@ -84,7 +94,9 @@ export default function ProductsPage() {
 
     if (!name || !price || !description || !category) return;
 
+    const token = getToken();
     const slug = slugify(name, { lower: true, strict: true });
+
     const payload: ProductPayload = {
       name,
       price: Number(price),
@@ -98,14 +110,20 @@ export default function ProductsPage() {
       if (editingProductId) {
         await fetch(API_URL, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
           body: JSON.stringify({ id: editingProductId, ...payload }),
         });
         setEditingProductId(null);
       } else {
         await fetch(API_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
           body: JSON.stringify(payload),
         });
       }
@@ -138,7 +156,13 @@ export default function ProductsPage() {
     if (!confirm("Are you sure want to delete this product?")) return;
 
     try {
-      await fetch(`${API_URL}?id=${id}`, { method: "DELETE" });
+      const token = getToken();
+
+      await fetch(`${API_URL}?id=${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
       setProducts((prev) => prev.filter((p) => p.id !== id));
     } catch (err) {
       console.error("Delete product error:", err);
@@ -250,7 +274,10 @@ export default function ProductsPage() {
 
             <tbody>
               {products.map((p, i) => (
-                <tr key={p.id} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                <tr
+                  key={p.id}
+                  className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                >
                   <td className="border px-4 py-2">{p.name}</td>
                   <td className="border px-4 py-2 text-right">
                     Rp {p.price.toLocaleString()}
@@ -258,7 +285,9 @@ export default function ProductsPage() {
                   <td className="border px-4 py-2 max-w-xs truncate">
                     {p.excerpt || p.description}
                   </td>
-                  <td className="border px-4 py-2 text-center">{p.category?.name || "-"}</td>
+                  <td className="border px-4 py-2 text-center">
+                    {p.category?.name || "-"}
+                  </td>
                   <td className="border px-4 py-2 text-center">
                     {p.image ? (
                       <div className="relative h-12 w-12 mx-auto">
@@ -291,7 +320,6 @@ export default function ProductsPage() {
                 </tr>
               ))}
             </tbody>
-
           </table>
         )}
       </div>

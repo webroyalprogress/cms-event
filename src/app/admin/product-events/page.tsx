@@ -39,13 +39,18 @@ export default function ProductEventsPage() {
         headers: {
           "Content-Type": "application/json",
           ...(options.headers || {}),
-          // kalau pernah punya token tinggal masukin di sini
           // Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
 
-      const data = await res.json();
-      return data;
+      // Cek kalau bukan JSON atau error
+      const text = await res.text();
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        console.error("Invalid JSON from API:", text);
+        return null;
+      }
     } catch (error) {
       console.error("[fetchAuth] Error:", error);
       return null;
@@ -62,7 +67,6 @@ export default function ProductEventsPage() {
       fetchAuth(API_EVENTS),
     ]);
 
-    // Guard agar tidak error kalau API return error object
     setProductEvents(Array.isArray(peData) ? peData : []);
     setProducts(Array.isArray(pData) ? pData : []);
     setEvents(Array.isArray(eData) ? eData : []);
@@ -73,12 +77,14 @@ export default function ProductEventsPage() {
   }, []);
 
   // -----------------------------------------
-  // Handle multi-submit
+  // Handle Multi-Save
   // -----------------------------------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!selectedProduct || selectedEvents.length === 0) return;
 
+    // Submit multiple eventIds
     for (const eventId of selectedEvents) {
       await fetchAuth(API_URL, {
         method: "POST",
@@ -89,16 +95,16 @@ export default function ProductEventsPage() {
       });
     }
 
-    // reset form
+    // Reset
     setSelectedProduct(null);
     setSelectedEvents([]);
 
-    // refresh list
+    // Refresh list
     fetchData();
   };
 
   // -----------------------------------------
-  // Delete Relationship
+  // Delete Relation
   // -----------------------------------------
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure want to remove this relation?")) return;
@@ -111,18 +117,20 @@ export default function ProductEventsPage() {
   };
 
   // -----------------------------------------
-  // Render UI
+  // Render
   // -----------------------------------------
   return (
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">Product Events (Multi-Assign)</h1>
 
-      {/* Form Multi-Select */}
+      {/* ================= FORM ================= */}
       <div className="mb-6 bg-white p-4 rounded shadow">
-        <h2 className="text-xl font-semibold mb-4">Assign Product to Multiple Events</h2>
+        <h2 className="text-xl font-semibold mb-4">
+          Assign Product to Multiple Events
+        </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Product Dropdown */}
+          {/* SELECT PRODUCT */}
           <div>
             <label className="block mb-1 font-medium">Product</label>
             <select
@@ -140,9 +148,11 @@ export default function ProductEventsPage() {
             </select>
           </div>
 
-          {/* Events Multi Select */}
+          {/* MULTI SELECT EVENT */}
           <div>
-            <label className="block mb-1 font-medium">Events (Multi-Select)</label>
+            <label className="block mb-1 font-medium">
+              Events (Multi-Select)
+            </label>
             <select
               className="w-full border rounded px-3 py-2"
               multiple
@@ -154,9 +164,9 @@ export default function ProductEventsPage() {
               }
               required
             >
-              {events.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.name}
+              {events.map((ev) => (
+                <option key={ev.id} value={ev.id}>
+                  {ev.name}
                 </option>
               ))}
             </select>
@@ -171,7 +181,7 @@ export default function ProductEventsPage() {
         </form>
       </div>
 
-      {/* Table List */}
+      {/* ================= TABLE ================= */}
       <div className="bg-white p-4 rounded shadow">
         <h2 className="text-xl font-semibold mb-4">Relations List</h2>
 
