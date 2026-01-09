@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 interface Logo {
   id: number;
   image_logo: string;
-  event: string; // slug event
+  event: string;
 }
 
 interface Event {
@@ -30,12 +30,14 @@ export default function LogosPage() {
   const API_URL = "/api/logos";
   const EVENTS_API_URL = "/api/events"; // ambil slug dari Neon DB
 
-  // Fetch semua logos
+  // ===============================
+  // FETCH LOGOS
+  // ===============================
   const fetchLogos = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(API_URL, { credentials: "include" });
+      const res = await fetch(API_URL);
       const data: Logo[] | ApiError = await res.json();
       if ("error" in data) {
         setError(data.error);
@@ -51,10 +53,12 @@ export default function LogosPage() {
     }
   };
 
-  // Fetch semua events
+  // ===============================
+  // FETCH EVENTS
+  // ===============================
   const fetchEvents = async () => {
     try {
-      const res = await fetch(EVENTS_API_URL, { credentials: "include" });
+      const res = await fetch(EVENTS_API_URL);
       const data: Event[] | ApiError = await res.json();
       if (!("error" in data)) setEvents(data);
     } catch (err) {
@@ -67,7 +71,9 @@ export default function LogosPage() {
     fetchEvents();
   }, []);
 
-  // Tambah / Update logo
+  // ===============================
+  // ADD / UPDATE LOGO
+  // ===============================
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -86,9 +92,10 @@ export default function LogosPage() {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-        credentials: "include",
       });
+
       const data: Logo | ApiError = await res.json();
+
       if ("error" in data) {
         setError(data.error);
       } else {
@@ -103,36 +110,37 @@ export default function LogosPage() {
     }
   };
 
-  // Edit button
+  // ===============================
+  // EDIT LOGO
+  // ===============================
   const handleEdit = (logo: Logo) => {
     setEditingId(logo.id);
     setImageLogo(logo.image_logo);
     setEvent(logo.event);
   };
 
-  // Delete button
+  // ===============================
+  // DELETE LOGO
+  // ===============================
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure want to delete this logo?")) return;
-    setError(null);
 
     try {
-      const res = await fetch(`${API_URL}?id=${id}`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
+      const res = await fetch(`${API_URL}?id=${id}`, { method: "DELETE" });
       const data: { message?: string; error?: string } = await res.json();
-      if (data.error) {
-        setError(data.error);
-      } else {
-        setLogos((prev) => prev.filter((l) => l.id !== id));
-      }
-    } catch (err) {
+
+      if (data.error) throw new Error(data.error);
+
+      setLogos((prev) => prev.filter((l) => l.id !== id));
+    } catch (err: any) {
       console.error(err);
-      setError("Failed to delete logo");
+      alert(err.message || "Failed to delete logo");
     }
   };
 
+  // ===============================
+  // RENDER
+  // ===============================
   return (
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">Logos</h1>

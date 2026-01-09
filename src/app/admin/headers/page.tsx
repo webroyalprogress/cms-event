@@ -77,8 +77,8 @@ export default function HeadersPage() {
     e.preventDefault();
     setError(null);
 
-    if (!judul || !deskripsi || !event || !icon) {
-      setError("All fields are required");
+    if (!judul || !event || !icon) {
+      setError("Judul, Event, dan Icon wajib diisi");
       return;
     }
 
@@ -116,11 +116,11 @@ export default function HeadersPage() {
   // Edit
   const handleEdit = (h: Header) => {
     setEditingId(h.id);
-    setJudul(h.judul);
-    setDeskripsi(h.deskripsi);
-    setDeskripsi2(h.deskripsi2);
-    setEvent(h.event);
-    setIcon(h.icon);
+    setJudul(h.judul ?? "");
+    setDeskripsi(h.deskripsi ?? "");
+    setDeskripsi2(h.deskripsi2 ?? "");
+    setEvent(h.event ?? "");
+    setIcon(h.icon ?? "");
   };
 
   // Delete
@@ -163,7 +163,7 @@ export default function HeadersPage() {
             <input
               type="text"
               className="w-full border rounded px-3 py-2"
-              value={judul}
+              value={judul ?? ""}
               onChange={(e) => setJudul(e.target.value)}
               required
             />
@@ -173,9 +173,8 @@ export default function HeadersPage() {
             <label className="block mb-1 font-medium">Deskripsi</label>
             <textarea
               className="w-full border rounded px-3 py-2"
-              value={deskripsi}
+              value={deskripsi ?? ""}
               onChange={(e) => setDeskripsi(e.target.value)}
-              required
             />
           </div>
 
@@ -183,7 +182,7 @@ export default function HeadersPage() {
             <label className="block mb-1 font-medium">Deskripsi 2</label>
             <textarea
               className="w-full border rounded px-3 py-2"
-              value={deskripsi2}
+              value={deskripsi2 ?? ""}
               onChange={(e) => setDeskripsi2(e.target.value)}
             />
           </div>
@@ -192,14 +191,14 @@ export default function HeadersPage() {
             <label className="block mb-1 font-medium">Event</label>
             <select
               className="w-full border rounded px-3 py-2"
-              value={event}
+              value={event ?? ""}
               onChange={(e) => setEvent(e.target.value)}
               required
             >
               <option value="">-- Select Event --</option>
               {events.map((ev) => (
-                <option key={ev.id} value={ev.slug}>
-                  {ev.name}
+                <option key={ev.id} value={ev.slug ?? ""}>
+                  {ev.name ?? ""}
                 </option>
               ))}
             </select>
@@ -210,7 +209,7 @@ export default function HeadersPage() {
             <input
               type="text"
               className="w-full border rounded px-3 py-2"
-              value={icon}
+              value={icon ?? ""}
               onChange={(e) => setIcon(e.target.value)}
               required
             />
@@ -250,11 +249,11 @@ export default function HeadersPage() {
             <tbody>
               {headers.map((h) => (
                 <tr key={h.id}>
-                  <td className="border px-4 py-2">{h.judul}</td>
-                  <td className="border px-4 py-2">{h.deskripsi}</td>
-                  <td className="border px-4 py-2">{h.deskripsi2}</td>
-                  <td className="border px-4 py-2">{h.event}</td>
-                  <td className="border px-4 py-2">{h.icon}</td>
+                  <td className="border px-4 py-2">{h.judul ?? ""}</td>
+                  <td className="border px-4 py-2">{h.deskripsi ?? ""}</td>
+                  <td className="border px-4 py-2">{h.deskripsi2 ?? ""}</td>
+                  <td className="border px-4 py-2">{h.event ?? ""}</td>
+                  <td className="border px-4 py-2">{h.icon ?? ""}</td>
                   <td className="border px-4 py-2 space-x-2">
                     <button
                       className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
